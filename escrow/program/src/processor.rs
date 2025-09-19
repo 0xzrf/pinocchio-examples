@@ -1,3 +1,4 @@
+use crate::{instructions::create_escrow, states::CreateEscrow};
 use borsh::{BorshDeserialize, BorshSerialize};
 use pinocchio::{
     account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
@@ -5,14 +6,14 @@ use pinocchio::{
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub enum EscrowInstructions {
-    CreateEscrow,
+    CreateEscrow(CreateEscrow),
     Withdraw,
     Close,
 }
 
 pub fn process_instruction(
-    _program_id: &Pubkey,
-    _accounts: &[AccountInfo],
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
     instruction: &[u8],
 ) -> ProgramResult {
     // Deserialize the data and check if the descriminator is a valid instruction type
@@ -20,10 +21,9 @@ pub fn process_instruction(
         .map_err(|_| ProgramError::InvalidInstructionData)?;
 
     match ix {
-        EscrowInstructions::CreateEscrow => {}
+        EscrowInstructions::CreateEscrow(data) => create_escrow(*program_id, accounts, data)?,
         EscrowInstructions::Withdraw => {}
         EscrowInstructions::Close => {}
     }
-
     Ok(())
 }
