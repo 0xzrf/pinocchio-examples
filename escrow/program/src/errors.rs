@@ -5,9 +5,8 @@ use {
 
 #[derive(Clone, Debug, Eq, PartialEq, Error)]
 pub enum EscrowErrors {
-    /// Lamport balance below rent-exempt threshold.
-    #[error("Lamport balance below rent-exempt threshold")]
-    NotRentExempt,
+    #[error("Couldn't mut borrow account data")]
+    BorrowInvalid,
 }
 
 impl From<EscrowErrors> for ProgramError {
@@ -19,7 +18,7 @@ impl From<EscrowErrors> for ProgramError {
 impl ToStr for EscrowErrors {
     fn to_str<E>(&self) -> &'static str {
         match self {
-            EscrowErrors::NotRentExempt => "Error: Lamport balance below rent-exempt threshold",
+            EscrowErrors::BorrowInvalid => "Load Error: Couldn't mut borrow account data",
         }
     }
 }
