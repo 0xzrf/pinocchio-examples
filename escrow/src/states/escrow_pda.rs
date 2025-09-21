@@ -14,6 +14,7 @@ impl EscrowPda {
     pub const ESCROW_SIZE: usize = 32 + 8 + 32 + 32 + 8;
     pub const ESCROW_PREFIX: &str = "escrow";
 
+    #[inline(always)]
     pub fn get_signer_seeds<'a>(creator: &'a Pubkey, mint_a: &'a Pubkey) -> [&'a [u8]; 3] {
         [
             Self::ESCROW_PREFIX.as_bytes(),
@@ -22,6 +23,7 @@ impl EscrowPda {
         ]
     }
 
+    #[inline(always)]
     pub fn load(escrow_account: &AccountInfo) -> Result<Self, ProgramError> {
         if escrow_account.can_borrow_mut_data().is_ok() {
             let data = unsafe { escrow_account.borrow_data_unchecked() };
@@ -35,6 +37,7 @@ impl EscrowPda {
         }
     }
 
+    #[inline(always)]
     pub fn init(
         &mut self,
         creator: &Pubkey,
