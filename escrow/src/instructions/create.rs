@@ -21,7 +21,7 @@ pub fn create_escrow(
     accounts: &[AccountInfo],
     data: CreateEscrow,
 ) -> ProgramResult {
-    validate(program_id, accounts)?;
+    validate(accounts)?;
 
     if let [creator, mint_a, mint_b, creator_mint_ata, escrow_pda, vault] = accounts {
         let escrow_seeds = EscrowPda::get_signer_seeds(creator.key(), mint_a.key());
@@ -67,7 +67,7 @@ pub fn create_escrow(
     Ok(())
 }
 
-pub fn validate(program_id: Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+pub fn validate(accounts: &[AccountInfo]) -> ProgramResult {
     if let [creator, _, _, creator_mint_ata, escrow_pda, vault] = accounts {
         require(creator.is_signer(), ProgramError::MissingRequiredSignature)?;
 
@@ -84,12 +84,6 @@ pub fn validate(program_id: Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
         require(
             creator_mint_ata.data_is_empty(),
             ProgramError::UninitializedAccount,
-        )?;
-
-        require(
-            // escrow_pda.owner() == &program_id,
-            pubkey_eq(escrow_pda.owner(), &program_id),
-            ProgramError::InvalidAccountOwner,
         )?;
     } else {
         return Err(NotEnoughAccountKeys);
