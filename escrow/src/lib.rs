@@ -4,8 +4,8 @@ mod constants;
 mod errors;
 mod helper;
 mod instructions;
-mod processor;
-mod states;
+pub mod processor;
+pub mod states;
 
 use processor::process_instruction;
 

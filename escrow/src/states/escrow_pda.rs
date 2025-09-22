@@ -2,13 +2,29 @@ use crate::errors::EscrowErrors;
 use borsh::{BorshDeserialize, BorshSerialize};
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
 
+/// `EscrowPda` represents the state of an escrow account in the program.
+///
+/// This struct stores all the necessary information for an escrow transaction,
+/// including the creator's public key, the token mints involved, and the amounts
+/// to be exchanged. It is serialized and stored in the escrow PDA (Program Derived Address)
+/// account on-chain.
+///
+/// Fields:
+/// - `creator`: The public key of the user who created the escrow.
+/// - `amount`: The amount of `mint_a` tokens the creator is depositing into escrow.
+/// - `mint_a`: The token mint address for the asset being offered by the creator.
+/// - `mint_b`: The token mint address for the asset the creator expects in return.
+/// - `receive`: The amount of `mint_b` tokens the creator expects to receive in exchange.
+///
+/// The struct also provides utility methods for PDA seed generation, loading from account data,
+/// and initialization.
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct EscrowPda {
     pub creator: Pubkey,
-    pub amount: u64,    // The amount of mint_a the creator is gonna put in
-    pub mint_a: Pubkey, // The token the creator of the escrow put in the escrow pda
-    pub mint_b: Pubkey, // The token the receiver send to the creator to release mint_a
-    pub receive: u64,   // The amount of mint_b the creator wants in return for giving mint_a
+    pub amount: u64,
+    pub mint_a: Pubkey,
+    pub mint_b: Pubkey,
+    pub receive: u64,
 }
 impl EscrowPda {
     pub const ESCROW_SIZE: usize = 32 + 8 + 32 + 32 + 8;
