@@ -28,7 +28,7 @@ pub fn create_escrow(
     {
         let escrow_seeds = EscrowPda::get_signer_seeds(creator.key(), mint_a.key());
 
-        let (expected_pda, _) = try_find_program_address(&escrow_seeds, &program_id).unwrap();
+        let (expected_pda, bump) = try_find_program_address(&escrow_seeds, &program_id).unwrap();
 
         require(
             pubkey_eq(&expected_pda, escrow_pda.key()),
@@ -52,6 +52,7 @@ pub fn create_escrow(
             mint_b.key(),
             data.send_amount,
             data.recv_amount,
+            bump,
         );
 
         Transfer {
@@ -81,7 +82,6 @@ pub fn validate(accounts: &[AccountInfo]) -> ProgramResult {
             escrow_pda.data_is_empty(),
             ProgramError::AccountAlreadyInitialized,
         )?;
-
         sol_log("Validation complete");
     } else {
         return Err(NotEnoughAccountKeys);

@@ -25,6 +25,7 @@ pub struct EscrowPda {
     pub mint_a: Pubkey,
     pub mint_b: Pubkey,
     pub receive: u64,
+    pub bump: u8,
 }
 impl EscrowPda {
     pub const ESCROW_SIZE: usize = 32 + 8 + 32 + 32 + 8;
@@ -61,11 +62,13 @@ impl EscrowPda {
         mint_b: &Pubkey,
         amount: u64,
         recieve: u64,
+        bump: u8,
     ) {
         self.creator = *creator;
         self.amount = amount;
         self.mint_a = *mint_a;
         self.mint_b = *mint_b;
         self.receive = recieve;
+        self.bump = bump;
     }
 }

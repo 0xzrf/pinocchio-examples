@@ -4,15 +4,15 @@ use pinocchio::{program_error::ProgramError, ProgramResult};
 ///
 /// # Arguments
 ///
-/// * `exp` - The boolean expression to evaluate.
+/// * `condition` - The boolean expression to evaluate.
 /// * `err` - The `ProgramError` to return if `exp` is false.
 ///
 /// # Returns
 ///
 /// * `Ok(())` if `exp` is true.
 /// * `Err(ProgramError)` if `exp` is false.
-pub fn require(exp: bool, err: ProgramError) -> ProgramResult {
-    if !exp {
+pub fn require(condition: bool, err: ProgramError) -> ProgramResult {
+    if !condition {
         return Err(err);
     }
     Ok(())

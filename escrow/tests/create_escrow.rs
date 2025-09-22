@@ -3,6 +3,7 @@ mod helpers;
 #[cfg(test)]
 pub mod create_escrow_tests {
     use crate::helpers::{create::*, get_mollusk, structs::ReturnVal};
+    use mollusk_svm::result::Check;
     use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
     #[test]
@@ -16,8 +17,16 @@ pub mod create_escrow_tests {
         } = get_create_ix_account_infos();
         let ix_data = get_create_raw_ix_data(10, 10);
 
-        let ix = Instruction::new_with_bytes(program_id, &ix_data, account_meta);
+        let ix = Instruction::new_with_bytes(program_id, &ix_data, account_meta.clone());
 
-        let result = mollusk.process_instruction(&ix, &account_infos);
+        let checks = vec![
+            Check::all_rent_exempt(),
+            Check::success(),
+            Check::account(&account_meta[4].pubkey) // Escrow pda
+                .owner(&program_id)
+                .build(),
+        ];
+
+        let _result = mollusk.process_and_validate_instruction(&ix, &account_infos, &checks);
     }
 }
