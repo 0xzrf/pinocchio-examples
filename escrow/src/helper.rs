@@ -11,12 +11,6 @@ use pinocchio::{program_error::ProgramError, ProgramResult};
 ///
 /// * `Ok(())` if `exp` is true.
 /// * `Err(ProgramError)` if `exp` is false.
-///
-/// # Example
-///
-/// ```
-/// require(some_condition, ProgramError::InvalidArgument)?;
-/// ```
 pub fn require(exp: bool, err: ProgramError) -> ProgramResult {
     if !exp {
         return Err(err);

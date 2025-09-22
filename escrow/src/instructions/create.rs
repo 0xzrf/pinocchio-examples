@@ -2,13 +2,13 @@ use crate::{
     helper::require,
     states::{CreateEscrow, EscrowPda},
 };
-use pinocchio::pubkey::try_find_program_address;
 use {
     pinocchio::{
         account_info::AccountInfo,
+        log::sol_log,
         program_error::ProgramError,
         program_error::ProgramError::NotEnoughAccountKeys,
-        pubkey::{pubkey_eq, Pubkey},
+        pubkey::{pubkey_eq, try_find_program_address, Pubkey},
         sysvars::{rent::Rent, Sysvar},
         ProgramResult,
     },
@@ -23,7 +23,9 @@ pub fn create_escrow(
 ) -> ProgramResult {
     validate(accounts)?;
 
-    if let [creator, mint_a, mint_b, creator_mint_ata, escrow_pda, vault] = accounts {
+    if let [creator, mint_a, mint_b, creator_mint_ata, escrow_pda, vault, _system_program, _token_program] =
+        accounts
+    {
         let escrow_seeds = EscrowPda::get_signer_seeds(creator.key(), mint_a.key());
 
         let (expected_pda, _) = try_find_program_address(&escrow_seeds, &program_id).unwrap();
@@ -44,7 +46,6 @@ pub fn create_escrow(
 
         let mut escrow_data = EscrowPda::load(escrow_pda)?;
 
-        // #[in]
         escrow_data.init(
             creator.key(),
             mint_a.key(),
@@ -68,23 +69,20 @@ pub fn create_escrow(
 }
 
 pub fn validate(accounts: &[AccountInfo]) -> ProgramResult {
-    if let [creator, _, _, creator_mint_ata, escrow_pda, vault] = accounts {
+    if let [creator, mint_a, _, _creator_mint_ata, escrow_pda, vault, _, _] = accounts {
         require(creator.is_signer(), ProgramError::MissingRequiredSignature)?;
 
         require(
-            TokenAccount::from_account_info(vault).unwrap().owner() == escrow_pda.key(),
+            TokenAccount::from_account_info(vault).unwrap().mint() == mint_a.key(),
             ProgramError::InvalidAccountOwner,
         )?;
 
         require(
-            !escrow_pda.data_is_empty(),
+            escrow_pda.data_is_empty(),
             ProgramError::AccountAlreadyInitialized,
         )?;
 
-        require(
-            creator_mint_ata.data_is_empty(),
-            ProgramError::UninitializedAccount,
-        )?;
+        sol_log("Validation complete");
     } else {
         return Err(NotEnoughAccountKeys);
     };

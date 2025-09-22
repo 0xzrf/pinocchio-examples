@@ -18,10 +18,16 @@ use spl_token::{
 const LAMPORTS_PER_SOL: u64 = 10u64.pow(9);
 const SPL_TOKEN_ID: Pubkey = Pubkey::from_str_const("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
-pub fn get_raw_ix_data(send: u64, recv: u64) -> Vec<u8> {
+/// Get the raw ix data for create ix
+///
+/// Fields:
+/// - `recv_amount`: The amount the to recv when someone is closing the pda
+/// - `send_amount`: The amount of mint_b to be sent
+///
+pub fn get_create_raw_ix_data(send: u64, recv: u64) -> Vec<u8> {
     let ix_data = EscrowInstructions::CreateEscrow(CreateEscrow {
-        recv_amount: recv,
-        send_amount: send,
+        recv_amount: recv * 10u64.pow(6),
+        send_amount: send * 10u64.pow(6),
     });
 
     let mut writer = Vec::new();
@@ -33,7 +39,8 @@ pub fn get_raw_ix_data(send: u64, recv: u64) -> Vec<u8> {
     writer
 }
 
-pub fn get_account_infos() -> ReturnVal {
+/// Get the configs, like acocunt meta and vec
+pub fn get_create_ix_account_infos() -> ReturnVal {
     let program_id = Pubkey::new_from_array(escrow::ID);
     let mollusk = get_mollusk(Pubkey::new_from_array(escrow::ID));
     let (system_program, system_program_account) =
@@ -109,7 +116,7 @@ pub fn get_account_infos() -> ReturnVal {
 
     spl_token::solana_program::program_pack::Pack::pack(
         spl_token::state::Account {
-            amount: 90_000,
+            amount: 90_000 * 10u64.pow(6),
             mint: sPubkey::new_from_array(*mint_a.as_array()), // TODO: Could cause issue
             close_authority: COption::None,
             owner: sPubkey::new_from_array(*creator.as_array()), // TODO: Could cause issue
