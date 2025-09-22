@@ -34,7 +34,8 @@ pub fn get_raw_ix_data(send: u64, recv: u64) -> Vec<u8> {
 }
 
 pub fn get_account_infos() -> ReturnVal {
-    let (mollusk, program_id) = get_mollusk();
+    let program_id = Pubkey::new_from_array(escrow::ID);
+    let mollusk = get_mollusk(Pubkey::new_from_array(escrow::ID));
     let (system_program, system_program_account) =
         mollusk_svm::program::keyed_account_for_system_program();
     let token_program_account =
@@ -171,9 +172,7 @@ pub fn get_account_infos() -> ReturnVal {
     }
 }
 
-pub fn get_mollusk() -> (Mollusk, Pubkey) {
-    let program_id = Pubkey::new_unique();
-
+pub fn get_mollusk(program_id: Pubkey) -> Mollusk {
     let mut mollusk = Mollusk::new(&program_id, "target/deploy/escrow");
 
     mollusk.add_program(
@@ -182,5 +181,5 @@ pub fn get_mollusk() -> (Mollusk, Pubkey) {
         &mollusk_svm::program::loader_keys::LOADER_V3,
     );
 
-    (mollusk, program_id)
+    mollusk
 }

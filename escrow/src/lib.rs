@@ -11,3 +11,5 @@ use processor::process_instruction;
 
 entrypoint!(process_instruction);
 nostd_panic_handler!();
+
+pinocchio_pubkey::declare_id!("BiGmdXV7rvvscVA5nVEeej1tVgBMPrwaoj8fjWZKBv1S");
