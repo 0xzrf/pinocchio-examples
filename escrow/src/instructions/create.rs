@@ -21,6 +21,8 @@ pub fn create_escrow(
     accounts: &[AccountInfo],
     data: CreateEscrow,
 ) -> ProgramResult {
+    sol_log("Escrow: CreateEscrow");
+
     validate(accounts)?;
 
     if let [creator, mint_a, mint_b, creator_mint_ata, escrow_pda, vault, _system_program, _token_program] =
@@ -35,6 +37,7 @@ pub fn create_escrow(
             ProgramError::IncorrectProgramId,
         )?;
 
+        sol_log("Creating PDA");
         CreateAccount {
             from: creator,
             lamports: (Rent::get()?).minimum_balance(EscrowPda::ESCROW_SIZE),
@@ -44,6 +47,7 @@ pub fn create_escrow(
         }
         .invoke()?;
 
+        sol_log("pda created");
         let mut escrow_data = EscrowPda::load(escrow_pda)?;
 
         escrow_data.init(

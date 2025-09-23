@@ -28,7 +28,7 @@ pub struct EscrowPda {
     pub bump: u8,
 }
 impl EscrowPda {
-    pub const ESCROW_SIZE: usize = 32 + 8 + 32 + 32 + 8;
+    pub const ESCROW_SIZE: usize = 32 + 8 + 32 + 32 + 8 + 1;
     pub const ESCROW_PREFIX: &str = "escrow";
 
     #[inline(always)]

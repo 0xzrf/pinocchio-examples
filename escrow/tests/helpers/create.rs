@@ -1,10 +1,12 @@
-use crate::helpers::structs::ReturnVal;
+use crate::helpers::{
+    common::{get_mollusk, get_program_configs},
+    structs::{ReturnVal, SystemConfig},
+};
 use borsh::BorshSerialize;
 use escrow::{
     processor::EscrowInstructions,
     states::{CreateEscrow, EscrowPda},
 };
-use mollusk_svm::Mollusk;
 use solana_sdk::{
     account::{Account, WritableAccount},
     message::AccountMeta,
@@ -15,6 +17,7 @@ use spl_token::{
     state::Mint,
 };
 
+#[allow(unused)]
 const LAMPORTS_PER_SOL: u64 = 10u64.pow(9);
 const SPL_TOKEN_ID: Pubkey = Pubkey::from_str_const("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
@@ -39,14 +42,19 @@ pub fn get_create_raw_ix_data(send: u64, recv: u64) -> Vec<u8> {
     writer
 }
 
+#[allow(unused)]
 /// Get the configs, like acocunt meta and vec
-pub fn get_create_ix_account_infos() -> ReturnVal {
+pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
     let program_id = Pubkey::new_from_array(escrow::ID);
     let mollusk = get_mollusk(Pubkey::new_from_array(escrow::ID));
-    let (system_program, system_program_account) =
-        mollusk_svm::program::keyed_account_for_system_program();
-    let token_program_account =
-        mollusk_svm::program::create_program_account_loader_v3(&SPL_TOKEN_ID);
+
+    let SystemConfig {
+        system_config,
+        token_config,
+    } = get_program_configs();
+
+    let (system_program, system_program_account) = system_config;
+    let (_, token_program_account) = token_config;
 
     let creator = Pubkey::new_unique();
 
@@ -155,6 +163,8 @@ pub fn get_create_ix_account_infos() -> ReturnVal {
     )
     .unwrap();
 
+    let ix_data = get_create_raw_ix_data(send, recv);
+
     ReturnVal {
         account_infos: vec![
             (creator, creator_account),
@@ -176,17 +186,6 @@ pub fn get_create_ix_account_infos() -> ReturnVal {
             AccountMeta::new(system_program, false),
             AccountMeta::new(SPL_TOKEN_ID, false),
         ],
+        ix_data,
     }
-}
-
-pub fn get_mollusk(program_id: Pubkey) -> Mollusk {
-    let mut mollusk = Mollusk::new(&program_id, "target/deploy/escrow");
-
-    mollusk.add_program(
-        &SPL_TOKEN_ID,
-        "tests/program_bytes/spl_token",
-        &mollusk_svm::program::loader_keys::LOADER_V3,
-    );
-
-    mollusk
 }

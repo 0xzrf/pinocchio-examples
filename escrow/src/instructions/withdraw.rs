@@ -3,6 +3,7 @@ use {
     pinocchio::{
         account_info::AccountInfo,
         instruction::{Seed, Signer},
+        log::sol_log,
         program_error::ProgramError,
         pubkey::{pubkey_eq, Pubkey},
         ProgramResult,
@@ -13,7 +14,8 @@ use {
     },
 };
 
-pub fn withdraw(program_id: Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+pub fn process_withdraw(program_id: Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+    sol_log("Escrow: Withdraw");
     let escrow_account = validate(&program_id, accounts)?;
 
     if let [taker, _taker_mint_b_ata, taker_mint_a_ata, maker_b_ata, escrow, escrow_vault, _token_program] =

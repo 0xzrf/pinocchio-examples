@@ -1,4 +1,7 @@
-use crate::{instructions::create_escrow, states::CreateEscrow};
+use crate::{
+    instructions::{create_escrow, process_close, process_withdraw},
+    states::CreateEscrow,
+};
 use borsh::{BorshDeserialize, BorshSerialize};
 use pinocchio::{
     account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
@@ -22,8 +25,8 @@ pub fn process_instruction(
 
     match ix {
         EscrowInstructions::CreateEscrow(data) => create_escrow(*program_id, accounts, data)?,
-        EscrowInstructions::Withdraw => {}
-        EscrowInstructions::Close => {}
+        EscrowInstructions::Withdraw => process_withdraw(*program_id, accounts)?,
+        EscrowInstructions::Close => process_close(*program_id, accounts)?,
     }
     Ok(())
 }

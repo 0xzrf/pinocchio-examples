@@ -1,3 +1,4 @@
+use super::structs::SystemConfig;
 use mollusk_svm::Mollusk;
 use solana_sdk::pubkey::Pubkey;
 use spl_token::ID as token_program;
@@ -12,4 +13,19 @@ pub fn get_mollusk(program_id: Pubkey) -> Mollusk {
     );
 
     mollusk
+}
+
+pub fn get_program_configs() -> SystemConfig {
+    let system_config = mollusk_svm::program::keyed_account_for_system_program();
+    let token_config = (
+        Pubkey::new_from_array(*token_program.as_array()),
+        mollusk_svm::program::create_program_account_loader_v3(&Pubkey::new_from_array(
+            *token_program.as_array(),
+        )),
+    );
+
+    SystemConfig {
+        system_config,
+        token_config,
+    }
 }

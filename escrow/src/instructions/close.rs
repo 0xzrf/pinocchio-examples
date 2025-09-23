@@ -3,6 +3,7 @@ use {
     pinocchio::{
         account_info::AccountInfo,
         instruction::{Seed, Signer},
+        log::sol_log,
         program_error::ProgramError,
         pubkey::{pubkey_eq, Pubkey},
         ProgramResult,
@@ -13,7 +14,8 @@ use {
     },
 };
 
-pub fn close(program_id: Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+pub fn process_close(program_id: Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+    sol_log("Escrow: Close");
     let escrow_data = validate(&program_id, accounts)?;
 
     if let [creator, creator_mint_ata, escrow, escrow_vault, _token_program] = accounts {
@@ -97,6 +99,7 @@ pub fn validate(program_id: &Pubkey, accounts: &[AccountInfo]) -> Result<EscrowP
             pubkey_eq(&expected_escrow, escrow.key()),
             EscrowErrors::InvalidEscrow.into(),
         )?;
+        sol_log("Validation successful");
 
         Ok(escrow_data)
     } else {
