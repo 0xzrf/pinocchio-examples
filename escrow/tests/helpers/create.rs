@@ -1,5 +1,5 @@
 use crate::helpers::{
-    common::{get_mollusk, get_program_configs},
+    common::{get_mollusk, get_program_configs, LAMPORTS_PER_SOL},
     structs::{ReturnVal, SystemConfig},
 };
 use borsh::BorshSerialize;
@@ -16,10 +16,6 @@ use spl_token::{
     solana_program::{program_option::COption, program_pack::Pack, pubkey::Pubkey as sPubkey},
     state::Mint,
 };
-
-#[allow(unused)]
-const LAMPORTS_PER_SOL: u64 = 10u64.pow(9);
-const SPL_TOKEN_ID: Pubkey = Pubkey::from_str_const("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 /// Get the raw ix data for create ix
 ///
@@ -54,7 +50,7 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
     } = get_program_configs();
 
     let (system_program, system_program_account) = system_config;
-    let (_, token_program_account) = token_config;
+    let (token_program, token_program_account) = token_config;
 
     let creator = Pubkey::new_unique();
 
@@ -76,7 +72,7 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
     let mut mint_a_account = Account::new(
         mollusk.sysvars.rent.minimum_balance(Mint::LEN),
         Mint::LEN,
-        &SPL_TOKEN_ID,
+        &token_program,
     );
 
     spl_token::solana_program::program_pack::Pack::pack(
@@ -96,7 +92,7 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
     let mut mint_b_account = Account::new(
         mollusk.sysvars.rent.minimum_balance(Mint::LEN),
         Mint::LEN,
-        &SPL_TOKEN_ID,
+        &token_program,
     );
 
     spl_token::solana_program::program_pack::Pack::pack(
@@ -119,7 +115,7 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
             .rent
             .minimum_balance(spl_token::state::Account::LEN),
         spl_token::state::Account::LEN,
-        &SPL_TOKEN_ID,
+        &token_program,
     );
 
     spl_token::solana_program::program_pack::Pack::pack(
@@ -145,7 +141,7 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
             .rent
             .minimum_balance(spl_token::state::Account::LEN),
         spl_token::state::Account::LEN,
-        &SPL_TOKEN_ID,
+        &token_program,
     );
 
     spl_token::solana_program::program_pack::Pack::pack(
@@ -174,7 +170,7 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
             (escrow_pda, escrow_account),
             (escrow_mint_ata, vault_account),
             (system_program, system_program_account),
-            (SPL_TOKEN_ID, token_program_account),
+            (token_program, token_program_account),
         ],
         account_meta: vec![
             AccountMeta::new(creator, true),
@@ -184,7 +180,7 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
             AccountMeta::new(escrow_pda, true),
             AccountMeta::new(escrow_mint_ata, false),
             AccountMeta::new(system_program, false),
-            AccountMeta::new(SPL_TOKEN_ID, false),
+            AccountMeta::new(token_program, false),
         ],
         ix_data,
     }

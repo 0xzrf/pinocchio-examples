@@ -29,3 +29,5 @@ pub fn get_program_configs() -> SystemConfig {
         token_config,
     }
 }
+
+pub const LAMPORTS_PER_SOL: u64 = 10u64.pow(9);
