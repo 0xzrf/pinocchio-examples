@@ -1,5 +1,5 @@
 use super::{
-    common::{get_mollusk, get_program_configs, LAMPORTS_PER_SOL},
+    common::{get_mint_configs, get_mollusk, get_program_configs, LAMPORTS_PER_SOL},
     structs::{ReturnVal, SystemConfig},
 };
 use escrow::states::EscrowPda;
@@ -7,10 +7,7 @@ use solana_sdk::{
     account::{Account, WritableAccount},
     pubkey::Pubkey,
 };
-use spl_token::{
-    solana_program::{program_option::COption, program_pack::Pack},
-    state::Mint,
-};
+use spl_token::{solana_program::program_option::COption, state::Mint};
 
 pub fn withdraw_configs() -> ReturnVal {
     let program_id = Pubkey::new_from_array(escrow::ID);
@@ -38,23 +35,25 @@ pub fn withdraw_configs() -> ReturnVal {
     let (escrow_pda, _) =
         solana_sdk::pubkey::Pubkey::find_program_address(&signer_seeds, &program_id);
 
-    let mut mint_a_account = Account::new(
-        mollusk.sysvars.rent.minimum_balance(Mint::LEN),
-        Mint::LEN,
-        &token_program,
-    );
+    let mint_a_config = Mint {
+        decimals: 6,
+        freeze_authority: COption::None,
+        mint_authority: COption::None,
+        supply: 100_000,
+        is_initialized: true,
+    };
 
-    spl_token::solana_program::program_pack::Pack::pack(
-        spl_token::state::Mint {
-            decimals: 6,
-            mint_authority: COption::None,
-            supply: 100_000,
-            is_initialized: true,
-            freeze_authority: COption::None,
-        },
-        mint_a_account.data_as_mut_slice(),
-    )
-    .unwrap();
+    let (mint_a, mint_a_account) = get_mint_configs(None, &mollusk, mint_a_config);
+
+    let mint_b_config = Mint {
+        decimals: 6,
+        freeze_authority: COption::None,
+        mint_authority: COption::None,
+        supply: 100_000,
+        is_initialized: true,
+    };
+
+    let (mint_b, mint_b_account) = get_mint_configs(None, &mollusk, mint_b_config);
 
     todo!()
 }

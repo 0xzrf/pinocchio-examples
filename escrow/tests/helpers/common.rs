@@ -1,7 +1,14 @@
 use super::structs::SystemConfig;
 use mollusk_svm::Mollusk;
-use solana_sdk::pubkey::Pubkey;
-use spl_token::ID as token_program;
+use solana_sdk::{
+    account::{Account, WritableAccount},
+    pubkey::Pubkey,
+};
+use spl_token::{
+    solana_program::program_pack::Pack,
+    state::{Account as ATA, Mint},
+    ID as token_program,
+};
 
 pub fn get_mollusk(program_id: Pubkey) -> Mollusk {
     let mut mollusk = Mollusk::new(&program_id, "target/deploy/escrow");
@@ -28,6 +35,67 @@ pub fn get_program_configs() -> SystemConfig {
         system_config,
         token_config,
     }
+}
+
+/// Creates a new mint with cusotmizable data
+///
+/// Arguments:
+/// - `seed`: opional seeds to make the address deterministic
+/// - `mollusk`: Mollusk program to get the minimum balance
+/// - `mint_data`: Data to store inside the mint
+pub fn get_mint_configs(
+    seed: Option<[u8; 32]>,
+    mollusk: &Mollusk,
+    mint_data: spl_token::state::Mint,
+) -> (Pubkey, Account) {
+    let mint = if let Some(mint_seeds) = seed {
+        Pubkey::new_from_array(mint_seeds)
+    } else {
+        Pubkey::new_unique()
+    };
+
+    let mut mint_account = Account::new(
+        mollusk.sysvars.rent.minimum_balance(Mint::LEN),
+        Mint::LEN,
+        &Pubkey::new_from_array(*token_program.as_array()),
+    );
+
+    spl_token::solana_program::program_pack::Pack::pack(
+        mint_data,
+        mint_account.data_as_mut_slice(),
+    )
+    .unwrap();
+
+    (mint, mint_account)
+}
+
+/// Creates a new ata with cusotmizable data
+///
+/// Arguments:
+/// - `seed`: opional seeds to make the address deterministic
+/// - `mollusk`: Mollusk program to get the minimum balance
+/// - `mint_data`: Data to store inside the ata
+pub fn get_ata_configs(
+    seed: Option<[u8; 32]>,
+    mollusk: &Mollusk,
+    ata_data: spl_token::state::Account,
+) -> (Pubkey, Account) {
+    let ata = if let Some(mint_seeds) = seed {
+        Pubkey::new_from_array(mint_seeds)
+    } else {
+        Pubkey::new_unique()
+    };
+
+    let mut ata_account = Account::new(
+        mollusk.sysvars.rent.minimum_balance(ATA::LEN),
+        ATA::LEN,
+        &Pubkey::new_from_array(*token_program.as_array()),
+    );
+
+    spl_token::solana_program::program_pack::Pack::pack(ata_data, ata_account.data_as_mut_slice())
+        .unwrap();
+
+    (ata, ata_account)
 }
 
 pub const LAMPORTS_PER_SOL: u64 = 10u64.pow(9);
