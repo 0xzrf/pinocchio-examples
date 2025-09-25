@@ -26,18 +26,18 @@ pub fn process_close(program_id: Pubkey, accounts: &[AccountInfo]) -> ProgramRes
             Seed::from(escrow_data.mint_a.as_ref()),
             Seed::from(&bump),
         ];
-        let seeds = Signer::from(&seed);
 
+        let seeds = Signer::from(&seed);
+        sol_log("Transferring tokens back");
         Transfer {
-            amount: TokenAccount::from_account_info(escrow_vault)
-                .map_err(|_| ProgramError::InvalidAccountData)?
-                .amount(),
+            amount: escrow_data.amount,
             authority: escrow,
             from: escrow_vault,
             to: creator_mint_ata,
         }
         .invoke_signed(&[seeds.clone()])?;
 
+        sol_log("Closing account");
         CloseAccount {
             account: escrow_vault,
             authority: escrow,
@@ -99,6 +99,12 @@ pub fn validate(program_id: &Pubkey, accounts: &[AccountInfo]) -> Result<EscrowP
             pubkey_eq(&expected_escrow, escrow.key()),
             EscrowErrors::InvalidEscrow.into(),
         )?;
+
+        require(
+            pubkey_eq(&escrow_data.creator, creator.key()),
+            ProgramError::InvalidAccountOwner,
+        )?;
+
         sol_log("Validation successful");
 
         Ok(escrow_data)

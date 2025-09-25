@@ -1,6 +1,6 @@
 use super::{
     common::{
-        get_ata_config, get_ata_configs, get_ix_data, get_mint_config, get_mint_configs,
+        get_ata_accounts, get_ata_config, get_ix_data, get_mint_accounts, get_mint_config,
         get_program_configs, LAMPORTS_PER_SOL,
     },
     structs::{ReturnVal, SystemConfig},
@@ -26,7 +26,7 @@ pub fn withdraw_configs(mollusk: &Mollusk) -> ReturnVal {
     let taker_account = Account::new(10 * LAMPORTS_PER_SOL, 0, &system_program);
 
     let mint_a_config = get_mint_config(100_000 * 10u64.pow(6));
-    let (mint_a, mint_a_account) = get_mint_configs(None, mollusk, mint_a_config);
+    let (mint_a, mint_a_account) = get_mint_accounts(None, mollusk, mint_a_config);
     let creator = Pubkey::new_unique();
     let signer_seeds = [
         EscrowPda::ESCROW_PREFIX.as_bytes(),
@@ -39,7 +39,7 @@ pub fn withdraw_configs(mollusk: &Mollusk) -> ReturnVal {
 
     let mint_b_config = get_mint_config(100_000 * 10u64.pow(6));
 
-    let (mint_b, mint_b_account) = get_mint_configs(None, mollusk, mint_b_config);
+    let (mint_b, mint_b_account) = get_mint_accounts(None, mollusk, mint_b_config);
 
     let taker_ata_config = get_ata_config(
         90_000u64.checked_mul(10u64.pow(6)).unwrap(),
@@ -47,7 +47,7 @@ pub fn withdraw_configs(mollusk: &Mollusk) -> ReturnVal {
         sPubkey::new_from_array(*taker.as_array()),
     );
     let (taker_a_mint_ata, taker_a_mint_ata_account) = // This ata's balance should increse
-        get_ata_configs(Some([0x04; 32]), mollusk, taker_ata_config);
+        get_ata_accounts(Some([0x04; 32]), mollusk, taker_ata_config);
     let taker_b_ata_config = get_ata_config(
         90_000u64.checked_mul(10u64.pow(6)).unwrap(),
         sPubkey::new_from_array(*mint_b.as_array()),
@@ -55,7 +55,7 @@ pub fn withdraw_configs(mollusk: &Mollusk) -> ReturnVal {
     );
 
     let (taker_b_mint_ata, taker_b_mint_ata_account) = // This will decrese in amount
-        get_ata_configs(Some([0x05; 32]), mollusk, taker_b_ata_config);
+        get_ata_accounts(Some([0x05; 32]), mollusk, taker_b_ata_config);
 
     let maker_ata_config = get_ata_config(
         90_000u64.checked_mul(10u64.pow(6)).unwrap(),
@@ -63,7 +63,7 @@ pub fn withdraw_configs(mollusk: &Mollusk) -> ReturnVal {
         sPubkey::new_from_array(*creator.as_array()),
     );
     let (maker_b_mint_ata, maker_b_mint_ata_account) = // this will increase in amount
-        get_ata_configs(Some([0x06; 32]), mollusk, maker_ata_config);
+        get_ata_accounts(Some([0x06; 32]), mollusk, maker_ata_config);
 
     let vault_ata_config = get_ata_config(
         20_000u64.checked_mul(10u64.pow(6)).unwrap(),
@@ -72,7 +72,7 @@ pub fn withdraw_configs(mollusk: &Mollusk) -> ReturnVal {
     );
 
     let (vault_a_ata, vault_a_ata_account) =
-        get_ata_configs(Some([0x07; 32]), mollusk, vault_ata_config);
+        get_ata_accounts(Some([0x07; 32]), mollusk, vault_ata_config);
 
     let mut escrow_pda_account = Account::new(
         mollusk.sysvars.rent.minimum_balance(EscrowPda::ESCROW_SIZE),

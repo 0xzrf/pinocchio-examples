@@ -45,7 +45,7 @@ pub fn get_program_configs() -> SystemConfig {
 /// - `seed`: opional seeds to make the address deterministic
 /// - `mollusk`: Mollusk program to get the minimum balance
 /// - `mint_data`: Data to store inside the mint
-pub fn get_mint_configs(
+pub fn get_mint_accounts(
     seed: Option<[u8; 32]>,
     mollusk: &Mollusk,
     mint_data: spl_token::state::Mint,
@@ -77,7 +77,7 @@ pub fn get_mint_configs(
 /// - `seed`: opional seeds to make the address deterministic
 /// - `mollusk`: Mollusk program to get the minimum balance
 /// - `mint_data`: Data to store inside the ata
-pub fn get_ata_configs(
+pub fn get_ata_accounts(
     seed: Option<[u8; 32]>,
     mollusk: &Mollusk,
     ata_data: spl_token::state::Account,

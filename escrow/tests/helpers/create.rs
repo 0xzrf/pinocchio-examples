@@ -1,7 +1,5 @@
 use crate::helpers::{
-    common::{
-        get_ata_configs, get_mint_configs, get_mollusk, get_program_configs, LAMPORTS_PER_SOL,
-    },
+    common::{get_ata_accounts, get_mint_accounts, get_program_configs, LAMPORTS_PER_SOL},
     structs::{ReturnVal, SystemConfig},
 };
 use borsh::BorshSerialize;
@@ -60,7 +58,7 @@ pub fn get_create_config(send: u64, recv: u64, mollusk: &Mollusk) -> ReturnVal {
         is_initialized: true,
     };
 
-    let (mint_a, mint_a_account) = get_mint_configs(Some([0x01; 32]), &mollusk, mint_a_config);
+    let (mint_a, mint_a_account) = get_mint_accounts(Some([0x01; 32]), mollusk, mint_a_config);
 
     let mint_b_config = Mint {
         decimals: 6,
@@ -70,7 +68,7 @@ pub fn get_create_config(send: u64, recv: u64, mollusk: &Mollusk) -> ReturnVal {
         is_initialized: true,
     };
 
-    let (mint_b, mint_b_account) = get_mint_configs(Some([0x02; 32]), &mollusk, mint_b_config);
+    let (mint_b, mint_b_account) = get_mint_accounts(Some([0x02; 32]), mollusk, mint_b_config);
 
     let signer_seeds = [
         EscrowPda::ESCROW_PREFIX.as_bytes(),
@@ -98,7 +96,7 @@ pub fn get_create_config(send: u64, recv: u64, mollusk: &Mollusk) -> ReturnVal {
         is_native: COption::None,
     };
     let (creator_mint_ata, creator_ata_account) =
-        get_ata_configs(Some([0x04; 32]), mollusk, creator_ata_config);
+        get_ata_accounts(Some([0x04; 32]), mollusk, creator_ata_config);
 
     let escrow_mint_ata = Pubkey::new_from_array([0x04; 32]);
 
@@ -121,7 +119,7 @@ pub fn get_create_config(send: u64, recv: u64, mollusk: &Mollusk) -> ReturnVal {
         state: spl_token::state::AccountState::Initialized,
         is_native: COption::None,
     };
-    let (_, vault) = get_ata_configs(Some([0x04; 32]), mollusk, vault_config);
+    let (_, vault) = get_ata_accounts(Some([0x04; 32]), mollusk, vault_config);
 
     let ix_data = get_create_raw_ix_data(send, recv);
 
