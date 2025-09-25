@@ -9,6 +9,7 @@ use escrow::{
     processor::EscrowInstructions,
     states::{CreateEscrow, EscrowPda},
 };
+use mollusk_svm::Mollusk;
 use solana_sdk::{account::Account, message::AccountMeta, pubkey::Pubkey};
 use spl_token::{
     solana_program::{program_option::COption, program_pack::Pack, pubkey::Pubkey as sPubkey},
@@ -38,10 +39,7 @@ pub fn get_create_raw_ix_data(send: u64, recv: u64) -> Vec<u8> {
 
 #[allow(unused)]
 /// Get the configs, like acocunt meta and vec
-pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
-    let program_id = Pubkey::new_from_array(escrow::ID);
-    let mollusk = get_mollusk(Pubkey::new_from_array(escrow::ID));
-
+pub fn get_create_config(send: u64, recv: u64, mollusk: &Mollusk) -> ReturnVal {
     let SystemConfig {
         system_config,
         token_config,
@@ -80,8 +78,10 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
         mint_a.as_ref(),
     ];
 
-    let (escrow_pda, _) =
-        solana_sdk::pubkey::Pubkey::find_program_address(&signer_seeds, &program_id);
+    let (escrow_pda, _) = solana_sdk::pubkey::Pubkey::find_program_address(
+        &signer_seeds,
+        &Pubkey::new_from_array(escrow::ID),
+    );
 
     let escrow_account = Account::new(0, 0, &system_program);
 
@@ -98,7 +98,7 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
         is_native: COption::None,
     };
     let (creator_mint_ata, creator_ata_account) =
-        get_ata_configs(Some([0x04; 32]), &mollusk, creator_ata_config);
+        get_ata_configs(Some([0x04; 32]), mollusk, creator_ata_config);
 
     let escrow_mint_ata = Pubkey::new_from_array([0x04; 32]);
 
@@ -121,7 +121,7 @@ pub fn get_create_config(send: u64, recv: u64) -> ReturnVal {
         state: spl_token::state::AccountState::Initialized,
         is_native: COption::None,
     };
-    let (_, vault) = get_ata_configs(Some([0x04; 32]), &mollusk, vault_config);
+    let (_, vault) = get_ata_configs(Some([0x04; 32]), mollusk, vault_config);
 
     let ix_data = get_create_raw_ix_data(send, recv);
 

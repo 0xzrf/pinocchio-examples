@@ -15,10 +15,10 @@ use {
 };
 
 pub fn process_withdraw(program_id: Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-    sol_log("Escrow: Withdraw");
+    sol_log("Escrow Instruction: Withdraw");
     let escrow_account = validate(&program_id, accounts)?;
 
-    if let [taker, taker_mint_b_ata, taker_mint_a_ata, maker_b_ata, escrow, escrow_vault, _token_program] =
+    if let [taker, taker_mint_b_ata, taker_mint_a_ata, maker_b_ata, _, _, escrow, escrow_vault, _token_program] =
         accounts
     {
         let bump = [escrow_account.bump];
@@ -65,7 +65,7 @@ pub fn process_withdraw(program_id: Pubkey, accounts: &[AccountInfo]) -> Program
 }
 
 fn validate(program_id: &Pubkey, accounts: &[AccountInfo]) -> Result<EscrowPda, ProgramError> {
-    if let [taker, taker_mint_b_ata, taker_mint_a_ata, mint_a, mint_b, escrow, escrow_vault, _] =
+    if let [taker, taker_mint_b_ata, taker_mint_a_ata, _, mint_a, mint_b, escrow, escrow_vault, _] =
         accounts
     {
         let taker_b_info = TokenAccount::from_account_info(taker_mint_b_ata)
@@ -73,13 +73,14 @@ fn validate(program_id: &Pubkey, accounts: &[AccountInfo]) -> Result<EscrowPda, 
 
         let taker_a_info = TokenAccount::from_account_info(taker_mint_a_ata)
             .map_err(|_| ProgramError::InvalidAccountData)?;
+
         let vault_info = TokenAccount::from_account_info(escrow_vault)
             .map_err(|_| ProgramError::InvalidAccountData)?;
+
         require(taker.is_signer(), ProgramError::MissingRequiredSignature)?;
         require(!escrow.data_is_empty(), ProgramError::UninitializedAccount)?;
 
         let escrow_account = EscrowPda::load(escrow)?;
-
         require(
             taker_a_info.is_initialized(),
             ProgramError::UninitializedAccount,
@@ -97,6 +98,7 @@ fn validate(program_id: &Pubkey, accounts: &[AccountInfo]) -> Result<EscrowPda, 
             pubkey_eq(mint_b.key(), &escrow_account.mint_b),
             EscrowErrors::InvalidMint.into(),
         )?;
+
         require(
             pubkey_eq(taker_b_info.mint(), &escrow_account.mint_b),
             EscrowErrors::InvalidMint.into(),
@@ -126,6 +128,8 @@ fn validate(program_id: &Pubkey, accounts: &[AccountInfo]) -> Result<EscrowPda, 
             pubkey_eq(&expected_escrow, escrow.key()),
             EscrowErrors::InvalidEscrow.into(),
         )?;
+
+        sol_log("Validation done");
 
         Ok(escrow_account)
     } else {

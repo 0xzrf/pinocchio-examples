@@ -15,7 +15,7 @@ use {
 };
 
 pub fn process_close(program_id: Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-    sol_log("Escrow: Close");
+    sol_log("Escrow Instruction: Close");
     let escrow_data = validate(&program_id, accounts)?;
 
     if let [creator, creator_mint_ata, escrow, escrow_vault, _token_program] = accounts {

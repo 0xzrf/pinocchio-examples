@@ -1,20 +1,18 @@
 use super::{
     common::{
         get_ata_config, get_ata_configs, get_ix_data, get_mint_config, get_mint_configs,
-        get_mollusk, get_program_configs, LAMPORTS_PER_SOL,
+        get_program_configs, LAMPORTS_PER_SOL,
     },
     structs::{ReturnVal, SystemConfig},
 };
 use borsh::BorshSerialize;
 use escrow::{processor::EscrowInstructions, states::EscrowPda};
+use mollusk_svm::Mollusk;
 use solana_sdk::{account::Account, message::AccountMeta, pubkey::Pubkey};
-use spl_token::{
-    solana_program::program_option::COption, solana_program::pubkey::Pubkey as sPubkey, state::Mint,
-};
+use spl_token::solana_program::pubkey::Pubkey as sPubkey;
 
-pub fn withdraw_configs() -> ReturnVal {
+pub fn withdraw_configs(mollusk: &Mollusk) -> ReturnVal {
     let program_id = Pubkey::new_from_array(escrow::ID);
-    let mollusk = get_mollusk(Pubkey::new_from_array(escrow::ID));
 
     let SystemConfig {
         system_config,
@@ -28,7 +26,7 @@ pub fn withdraw_configs() -> ReturnVal {
     let taker_account = Account::new(10 * LAMPORTS_PER_SOL, 0, &system_program);
 
     let mint_a_config = get_mint_config(100_000 * 10u64.pow(6));
-    let (mint_a, mint_a_account) = get_mint_configs(None, &mollusk, mint_a_config);
+    let (mint_a, mint_a_account) = get_mint_configs(None, mollusk, mint_a_config);
     let creator = Pubkey::new_unique();
     let signer_seeds = [
         EscrowPda::ESCROW_PREFIX.as_bytes(),
@@ -41,7 +39,7 @@ pub fn withdraw_configs() -> ReturnVal {
 
     let mint_b_config = get_mint_config(100_000 * 10u64.pow(6));
 
-    let (mint_b, mint_b_account) = get_mint_configs(None, &mollusk, mint_b_config);
+    let (mint_b, mint_b_account) = get_mint_configs(None, mollusk, mint_b_config);
 
     let taker_ata_config = get_ata_config(
         90_000u64.checked_mul(10u64.pow(6)).unwrap(),
@@ -49,7 +47,7 @@ pub fn withdraw_configs() -> ReturnVal {
         sPubkey::new_from_array(*taker.as_array()),
     );
     let (taker_a_mint_ata, taker_a_mint_ata_account) = // This ata's balance should increse
-        get_ata_configs(Some([0x05; 32]), &mollusk, taker_ata_config);
+        get_ata_configs(Some([0x04; 32]), mollusk, taker_ata_config);
     let taker_b_ata_config = get_ata_config(
         90_000u64.checked_mul(10u64.pow(6)).unwrap(),
         sPubkey::new_from_array(*mint_b.as_array()),
@@ -57,7 +55,7 @@ pub fn withdraw_configs() -> ReturnVal {
     );
 
     let (taker_b_mint_ata, taker_b_mint_ata_account) = // This will decrese in amount
-        get_ata_configs(Some([0x05; 32]), &mollusk, taker_b_ata_config);
+        get_ata_configs(Some([0x05; 32]), mollusk, taker_b_ata_config);
 
     let maker_ata_config = get_ata_config(
         90_000u64.checked_mul(10u64.pow(6)).unwrap(),
@@ -65,20 +63,20 @@ pub fn withdraw_configs() -> ReturnVal {
         sPubkey::new_from_array(*creator.as_array()),
     );
     let (maker_b_mint_ata, maker_b_mint_ata_account) = // this will increase in amount
-        get_ata_configs(Some([0x06; 32]), &mollusk, maker_ata_config);
+        get_ata_configs(Some([0x06; 32]), mollusk, maker_ata_config);
 
     let vault_ata_config = get_ata_config(
-        10_000u64.checked_mul(10u64.pow(6)).unwrap(),
+        20_000u64.checked_mul(10u64.pow(6)).unwrap(),
         sPubkey::new_from_array(*mint_a.as_array()),
-        sPubkey::new_from_array(*creator.as_array()),
+        sPubkey::new_from_array(*escrow_pda.as_array()),
     );
 
-    let (vault_b_ata, vault_b_ata_account) =
-        get_ata_configs(Some([0x07; 32]), &mollusk, vault_ata_config);
+    let (vault_a_ata, vault_a_ata_account) =
+        get_ata_configs(Some([0x07; 32]), mollusk, vault_ata_config);
 
     let mut escrow_pda_account = Account::new(
         mollusk.sysvars.rent.minimum_balance(EscrowPda::ESCROW_SIZE),
-        EscrowPda::ESCROW_SIZE,
+        0,
         &program_id,
     );
 
@@ -104,7 +102,7 @@ pub fn withdraw_configs() -> ReturnVal {
             (mint_a, mint_a_account),
             (mint_b, mint_b_account),
             (escrow_pda, escrow_pda_account),
-            (vault_b_ata, vault_b_ata_account),
+            (vault_a_ata, vault_a_ata_account),
             (token_program, token_program_account),
         ],
         account_meta: vec![
@@ -115,7 +113,7 @@ pub fn withdraw_configs() -> ReturnVal {
             AccountMeta::new(mint_a, false),
             AccountMeta::new(mint_b, false),
             AccountMeta::new(escrow_pda, true),
-            AccountMeta::new(vault_b_ata, false),
+            AccountMeta::new(vault_a_ata, false),
             AccountMeta::new(token_program, false),
         ],
         ix_data,

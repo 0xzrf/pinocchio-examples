@@ -28,7 +28,7 @@ pub struct EscrowPda {
     pub bump: u8,
 }
 impl EscrowPda {
-    pub const ESCROW_SIZE: usize = core::mem::size_of::<EscrowPda>();
+    pub const ESCROW_SIZE: usize = 32 * 3 + 8 * 2 + 1;
 
     pub const ESCROW_PREFIX: &str = "escrow";
 

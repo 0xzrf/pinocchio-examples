@@ -21,7 +21,7 @@ pub fn create_escrow(
     accounts: &[AccountInfo],
     data: CreateEscrow,
 ) -> ProgramResult {
-    sol_log("Escrow: CreateEscrow");
+    sol_log("Escrow Instruction: CreateEscrow");
 
     validate(accounts)?;
 
@@ -49,7 +49,7 @@ pub fn create_escrow(
 
         sol_log("pda created");
         let mut escrow_data = EscrowPda::load(escrow_pda)?;
-
+        sol_log("Initializing pda");
         escrow_data.init(
             creator.key(),
             mint_a.key(),

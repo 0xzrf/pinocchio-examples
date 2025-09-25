@@ -12,8 +12,8 @@ use spl_token::{
     ID as token_program,
 };
 
-pub fn get_mollusk(program_id: Pubkey) -> Mollusk {
-    let mut mollusk = Mollusk::new(&program_id, "target/deploy/escrow");
+pub fn get_mollusk(program_id: &Pubkey) -> Mollusk {
+    let mut mollusk = Mollusk::new(program_id, "target/deploy/escrow");
 
     mollusk.add_program(
         &Pubkey::new_from_array(*token_program.as_array()),
