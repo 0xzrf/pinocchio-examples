@@ -9,11 +9,7 @@ use escrow::{
     processor::EscrowInstructions,
     states::{CreateEscrow, EscrowPda},
 };
-use solana_sdk::{
-    account::{Account, WritableAccount},
-    message::AccountMeta,
-    pubkey::Pubkey,
-};
+use solana_sdk::{account::Account, message::AccountMeta, pubkey::Pubkey};
 use spl_token::{
     solana_program::{program_option::COption, program_pack::Pack, pubkey::Pubkey as sPubkey},
     state::Mint,

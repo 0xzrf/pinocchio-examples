@@ -18,7 +18,7 @@ pub fn process_withdraw(program_id: Pubkey, accounts: &[AccountInfo]) -> Program
     sol_log("Escrow: Withdraw");
     let escrow_account = validate(&program_id, accounts)?;
 
-    if let [taker, _taker_mint_b_ata, taker_mint_a_ata, maker_b_ata, escrow, escrow_vault, _token_program] =
+    if let [taker, taker_mint_b_ata, taker_mint_a_ata, maker_b_ata, escrow, escrow_vault, _token_program] =
         accounts
     {
         let bump = [escrow_account.bump];
@@ -40,7 +40,7 @@ pub fn process_withdraw(program_id: Pubkey, accounts: &[AccountInfo]) -> Program
         Transfer {
             amount: escrow_account.receive,
             authority: taker,
-            from: _taker_mint_b_ata,
+            from: taker_mint_b_ata,
             to: maker_b_ata,
         }
         .invoke()?;

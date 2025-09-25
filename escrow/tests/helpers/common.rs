@@ -1,11 +1,13 @@
 use super::structs::SystemConfig;
+use borsh::BorshSerialize;
+use escrow::processor::EscrowInstructions;
 use mollusk_svm::Mollusk;
 use solana_sdk::{
     account::{Account, WritableAccount},
     pubkey::Pubkey,
 };
 use spl_token::{
-    solana_program::program_pack::Pack,
+    solana_program::{program_option::COption, program_pack::Pack, pubkey::Pubkey as sPubkey},
     state::{Account as ATA, Mint},
     ID as token_program,
 };
@@ -96,6 +98,39 @@ pub fn get_ata_configs(
         .unwrap();
 
     (ata, ata_account)
+}
+
+pub fn get_ix_data(ix_data: EscrowInstructions) -> Vec<u8> {
+    let mut writer = Vec::new();
+
+    ix_data
+        .serialize(&mut writer)
+        .expect("Unable to serialize the ix_data");
+
+    writer
+}
+
+pub fn get_mint_config(supply: u64) -> Mint {
+    Mint {
+        decimals: 6,
+        freeze_authority: COption::None,
+        mint_authority: COption::None,
+        is_initialized: true,
+        supply,
+    }
+}
+
+pub fn get_ata_config(amount: u64, mint: sPubkey, owner: sPubkey) -> ATA {
+    ATA {
+        amount,
+        close_authority: COption::None,
+        delegate: COption::None,
+        delegated_amount: 0,
+        is_native: COption::None,
+        mint,
+        owner,
+        state: spl_token::state::AccountState::Initialized,
+    }
 }
 
 pub const LAMPORTS_PER_SOL: u64 = 10u64.pow(9);
