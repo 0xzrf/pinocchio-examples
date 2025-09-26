@@ -1,12 +1,14 @@
 use crate::{constants::*, require, AmmError};
-use borsh::{BorshDeserialize, BorshSerialize};
+use bytemuck::{Pod, Zeroable};
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
 pub struct GlobalConfig {
-    pub inittialized: bool,
+    pub inittialized: u8,
     pub bump: u8,
     pub mint_decimals: u8,
+    pub _padding: [u8; 5],
 
     pub admin: Pubkey,
     pub fee_received: Pubkey,
@@ -22,7 +24,7 @@ impl GlobalConfig {
     const GLOBAL_PEFIX: &[u8; 13] = b"global_config";
     const SIZE: usize = U8_LEN * 3 + PUBKEY_LEN * 2 + U64_LEN * 4;
 
-    pub fn init_global(
+    pub fn update_global(
         &self,
         params: GlobalSettingsInput,
         escrow_program: &AccountInfo,
@@ -36,6 +38,7 @@ impl GlobalConfig {
             initial_virtual_sol_reserves,
             initial_real_token_reserves,
             token_total_supply,
+            _padding: _,
         } = params;
 
         escrow_data.admin = admin;
@@ -52,13 +55,13 @@ impl GlobalConfig {
     pub fn load(escrow_program: &AccountInfo) -> Result<Self, ProgramError> {
         let data = unsafe { escrow_program.borrow_mut_data_unchecked() };
 
-        let escrow_data =
-            GlobalConfig::try_from_slice(data).map_err(|_| AmmError::BorrowInvalid)?;
+        let escrow_data = bytemuck::try_from_bytes::<GlobalConfig>(&data)
+            .map_err(|_| ProgramError::InvalidAccountData)?;
 
-        Ok(escrow_data)
+        Ok(*escrow_data)
     }
 
-    pub fn validate_settings(&self, params: &GlobalSettingsInput) -> Result<(), ProgramError> {
+    pub fn validate_settings(params: &GlobalSettingsInput) -> Result<(), ProgramError> {
         require(
             params.mint_decimals <= 9,
             ProgramError::InvalidInstructionData,
@@ -91,9 +94,11 @@ impl GlobalConfig {
     }
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
 pub struct GlobalSettingsInput {
     pub mint_decimals: u8,
+    pub _padding: [u8; 7],
 
     pub fee_receiver: Pubkey,
     pub admin: Pubkey,

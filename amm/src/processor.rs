@@ -1,28 +1,21 @@
-use crate::states::global_config::GlobalSettingsInput;
-use borsh::{BorshDeserialize, BorshSerialize};
 use pinocchio::{
     account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
 };
 
-#[derive(BorshDeserialize, BorshSerialize)]
-pub enum AmmInstructions {
-    CreateGlobal(GlobalSettingsInput),
-    UpdateGlobal,
-    CreateBondingCurve,
-    Swap,
-}
+use crate::instructions::AmmInstructions;
 
 pub fn process_instruction(
     pubkey: &Pubkey,
     accounts: &[AccountInfo],
     ix_data: &[u8],
 ) -> ProgramResult {
-    let ix_data = AmmInstructions::try_from_slice(ix_data)
-        .map_err(|_| ProgramError::InvalidInstructionData)?;
+    let (disc, ix) = ix_data
+        .split_first()
+        .ok_or(ProgramError::InvalidInstructionData)?;
 
-    match ix_data {
+    match AmmInstructions::try_from(disc)? {
         AmmInstructions::CreateBondingCurve => {}
-        AmmInstructions::CreateGlobal(data) => {}
+        AmmInstructions::CreateGlobal => {}
         AmmInstructions::Swap => {}
         AmmInstructions::UpdateGlobal => {}
     }
