@@ -104,6 +104,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "amm"
+version = "0.1.0"
+dependencies = [
+ "borsh 1.5.7 (git+https://github.com/near/borsh-rs)",
+ "mollusk-svm",
+ "pinocchio",
+ "pinocchio-pubkey",
+ "pinocchio-token",
+ "solana-sdk",
+ "spl-token",
+ "thiserror-no-std",
+]
+
+[[package]]
 name = "anstream"
 version = "0.6.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -805,21 +819,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
-name = "escrow"
-version = "0.1.0"
-dependencies = [
- "borsh 1.5.7 (git+https://github.com/near/borsh-rs)",
- "mollusk-svm",
- "pinocchio",
- "pinocchio-pubkey",
- "pinocchio-system",
- "pinocchio-token",
- "solana-sdk",
- "spl-token",
- "thiserror-no-std",
-]
-
-[[package]]
 name = "feature-probe"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1064,9 +1063,9 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.80"
+version = "0.3.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "852f13bec5eba4ba9afbeb93fd7c13fe56147f055939ae21c43a29a0ecb2702e"
+checksum = "ec48937a97411dcb524a265206ccd4c90bb711fca92b2792c407f268825b9305"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
@@ -1103,9 +1102,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.175"
+version = "0.2.176"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a82ae493e598baaea5209805c49bbf2ea7de956d50d7da0da1164f9c6d28543"
+checksum = "58f929b4d672ea937a23a1ab494143d968337a5f47e56d0815df1e0890ddf174"
 
 [[package]]
 name = "libsecp256k1"
@@ -1200,9 +1199,9 @@ dependencies = [
 
 [[package]]
 name = "mollusk-svm"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3effebe58cacce7ae2bd7b6f365bde73926005ef3e4bf933757a9ff3c8a6d31c"
+checksum = "5f7da80022acbada517ec6becc3e7e2012b9012e1cf00cf0e0a336156f32fddd"
 dependencies = [
  "agave-feature-set",
  "agave-precompiles",
@@ -1242,9 +1241,9 @@ dependencies = [
 
 [[package]]
 name = "mollusk-svm-error"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6f7eefd34ed2de6be1d53595eafdac4c5dd161cfff73c26ad0ad1ef529ff8dd"
+checksum = "97230bc9e87c95fcd9cc0b42a9da212e9a62b0807b70cadfcf9272baef8900bd"
 dependencies = [
  "solana-pubkey 3.0.0",
  "thiserror 1.0.69",
@@ -1252,9 +1251,9 @@ dependencies = [
 
 [[package]]
 name = "mollusk-svm-keys"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b94403da8559547d872719021cda4f6524a8d0ab77524816b70d141b16758f"
+checksum = "11a5b42ac2953ef03b105388cbef6e35a1b2ef05277f9bc7c4c8c5dfe2dbae85"
 dependencies = [
  "mollusk-svm-error",
  "solana-account",
@@ -1265,9 +1264,9 @@ dependencies = [
 
 [[package]]
 name = "mollusk-svm-result"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "258f15b3b78957c1aa5c5ffe90e48d33912b410fcc63d426d806af7451239d06"
+checksum = "7645fffe38e8de4831bebbe94db7d96d05c056b400aa7a1d9c3c1224ae0e592c"
 dependencies = [
  "solana-account",
  "solana-instruction 3.0.0",
@@ -1529,16 +1528,6 @@ dependencies = [
  "five8_const",
  "pinocchio",
  "sha2-const-stable",
-]
-
-[[package]]
-name = "pinocchio-system"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "141ed5eafb4ab04568bb0e224e3dc9a9de13c933de4c004e0d1a553498be3a7c"
-dependencies = [
- "pinocchio",
- "pinocchio-pubkey",
 ]
 
 [[package]]
@@ -3904,9 +3893,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.103"
+version = "0.2.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab10a69fbd0a177f5f649ad4d8d3305499c42bab9aef2f7ff592d0ec8f833819"
+checksum = "c1da10c01ae9f1ae40cbfac0bac3b1e724b320abfcf52229f80b547c0d250e2d"
 dependencies = [
  "cfg-if",
  "once_cell",
@@ -3917,9 +3906,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-backend"
-version = "0.2.103"
+version = "0.2.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bb702423545a6007bbc368fde243ba47ca275e549c8a28617f56f6ba53b1d1c"
+checksum = "671c9a5a66f49d8a47345ab942e2cb93c7d1d0339065d4f8139c486121b43b19"
 dependencies = [
  "bumpalo",
  "log",
@@ -3931,9 +3920,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.103"
+version = "0.2.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc65f4f411d91494355917b605e1480033152658d71f722a90647f56a70c88a0"
+checksum = "7ca60477e4c59f5f2986c50191cd972e3a50d8a95603bc9434501cf156a9a119"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -3941,9 +3930,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.103"
+version = "0.2.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffc003a991398a8ee604a401e194b6b3a39677b3173d6e74495eb51b82e99a32"
+checksum = "9f07d2f20d4da7b26400c9f4a0511e6e0345b040694e8a75bd41d578fa4421d7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3954,9 +3943,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.103"
+version = "0.2.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "293c37f4efa430ca14db3721dfbe48d8c33308096bd44d80ebaa775ab71ba1cf"
+checksum = "bad67dc8b2a1a6e5448428adec4c3e84c43e561d8c9ee8a9e5aabeb193ec41d1"
 dependencies = [
  "unicode-ident",
 ]
