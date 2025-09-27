@@ -1,17 +1,19 @@
-use crate::instructions::AmmInstructions;
-use crate::require;
+use crate::{
+    instructions::{init_global_config::init_global, AmmInstructions},
+    require,
+};
 use pinocchio::pubkey::pubkey_eq;
 use pinocchio::{
     account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
 };
 
 pub fn process_instruction(
-    pubkey: &Pubkey,
+    program_id: &Pubkey,
     accounts: &[AccountInfo],
     ix_data: &[u8],
 ) -> ProgramResult {
     require(
-        pubkey_eq(pubkey, &crate::ID),
+        pubkey_eq(program_id, &crate::ID),
         ProgramError::IncorrectProgramId,
     )?;
 
@@ -21,7 +23,7 @@ pub fn process_instruction(
 
     match AmmInstructions::try_from(disc)? {
         AmmInstructions::CreateBondingCurve => {}
-        AmmInstructions::CreateGlobal => {}
+        AmmInstructions::CreateGlobal => init_global(program_id, accounts, ix)?,
         AmmInstructions::Swap => {}
         AmmInstructions::UpdateGlobal => {}
     }

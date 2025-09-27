@@ -16,7 +16,8 @@ impl TryFrom<&u8> for AmmInstructions {
         match *value {
             0 => Ok(AmmInstructions::CreateGlobal),
             1 => Ok(AmmInstructions::UpdateGlobal),
-            2 => Ok(AmmInstructions::Swap),
+            2 => Ok(AmmInstructions::CreateBondingCurve),
+            3 => Ok(AmmInstructions::Swap),
             _ => Err(ProgramError::InvalidInstructionData),
         }
     }

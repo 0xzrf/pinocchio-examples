@@ -3,7 +3,7 @@ use bytemuck::{Pod, Zeroable};
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
 
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug)]
 pub struct GlobalConfig {
     pub inittialized: u8,
     pub bump: u8,
@@ -11,7 +11,7 @@ pub struct GlobalConfig {
     pub _padding: [u8; 5],
 
     pub admin: Pubkey,
-    pub fee_received: Pubkey,
+    pub fee_receiver: Pubkey,
 
     // initial values for bonding curve
     pub initial_virtual_token_reserves: u64,
@@ -29,7 +29,7 @@ impl GlobalConfig {
         global_account: &AccountInfo,
         bump: u8,
     ) -> Result<(), ProgramError> {
-        let mut escrow_data = GlobalConfig::load(global_account)?;
+        let global_data = GlobalConfig::load(global_account)?;
         let GlobalSettingsInput {
             mint_decimals,
             fee_receiver,
@@ -41,26 +41,26 @@ impl GlobalConfig {
             _padding: _,
         } = params;
 
-        escrow_data.admin = admin;
-        escrow_data.fee_received = fee_receiver;
-        escrow_data.mint_decimals = mint_decimals;
-        escrow_data.initial_real_token_reserves = initial_real_token_reserves;
-        escrow_data.initial_virtual_sol_reserves = initial_virtual_sol_reserves;
-        escrow_data.initial_virtual_token_reserves = initial_virtual_token_reserves;
-        escrow_data.token_total_supply = token_total_supply;
-        escrow_data.bump = bump;
-        escrow_data.inittialized = 1;
+        global_data.admin = admin;
+        global_data.fee_receiver = fee_receiver;
+        global_data.mint_decimals = mint_decimals;
+        global_data.initial_real_token_reserves = initial_real_token_reserves;
+        global_data.initial_virtual_sol_reserves = initial_virtual_sol_reserves;
+        global_data.initial_virtual_token_reserves = initial_virtual_token_reserves;
+        global_data.token_total_supply = token_total_supply;
+        global_data.bump = bump;
+        global_data.inittialized = 1;
+        global_data._padding = [0u8; 5];
 
         Ok(())
     }
 
-    pub fn load(global_account: &AccountInfo) -> Result<Self, ProgramError> {
+    #[inline(always)]
+    pub fn load(global_account: &AccountInfo) -> Result<&mut Self, ProgramError> {
         let data = unsafe { global_account.borrow_mut_data_unchecked() };
 
-        let escrow_data = bytemuck::try_from_bytes::<GlobalConfig>(data)
-            .map_err(|_| ProgramError::InvalidAccountData)?;
-
-        Ok(*escrow_data)
+        bytemuck::try_from_bytes_mut::<GlobalConfig>(data)
+            .map_err(|_| ProgramError::InvalidAccountData)
     }
 
     pub fn validate_settings(params: &GlobalSettingsInput) -> Result<(), ProgramError> {

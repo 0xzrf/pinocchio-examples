@@ -5,6 +5,7 @@ use crate::{
 use {
     pinocchio::{
         account_info::AccountInfo,
+        log::sol_log,
         program_error::ProgramError,
         pubkey::{find_program_address, pubkey_eq, Pubkey},
         sysvars::{rent::Rent, Sysvar},
@@ -14,6 +15,7 @@ use {
 };
 
 pub fn init_global(program_id: &Pubkey, accounts: &[AccountInfo], ix_data: &[u8]) -> ProgramResult {
+    sol_log("AMM Instruction: INIT_GLOBAL");
     if let [admin, global_config, _] = accounts {
         require(admin.is_signer(), ProgramError::MissingRequiredSignature)?;
 
@@ -30,6 +32,12 @@ pub fn init_global(program_id: &Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
             pubkey_eq(&global_config_pda, global_config.key()),
             ProgramError::IncorrectProgramId,
         )?;
+        require(
+            ix_data.len() == GlobalConfig::SIZE,
+            ProgramError::InvalidInstructionData,
+        )?;
+
+        sol_log("Validation successful");
 
         CreateAccount {
             from: admin,
@@ -40,7 +48,11 @@ pub fn init_global(program_id: &Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
         }
         .invoke()?;
 
-        let params = bytemuck::try_from_bytes::<GlobalSettingsInput>(ix_data)
+        let mut aligned_ix_buf = [0u8; GlobalConfig::SIZE]; // putting raw ix_data will fail since it started at index 1 of the original instruction_data, so this new allocation is required
+
+        aligned_ix_buf.copy_from_slice(ix_data);
+
+        let params = bytemuck::try_from_bytes::<GlobalSettingsInput>(&aligned_ix_buf)
             .map_err(|_| ProgramError::InvalidInstructionData)?;
 
         GlobalConfig::validate_settings(params)?;
