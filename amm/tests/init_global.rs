@@ -11,7 +11,9 @@ pub mod init_global_tests {
         get_mollusk, ix_configs::init_global_configs::get_init_global_configs, ReturnVal,
     };
     use mollusk_svm::result::Check;
-    use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
+    use solana_sdk::{
+        account::Account, instruction::Instruction, message::AccountMeta, pubkey::Pubkey,
+    };
 
     #[test]
     pub fn test_init_global_works() {
@@ -60,5 +62,82 @@ pub mod init_global_tests {
         ];
 
         mollusk.process_and_validate_instruction(&ix, &account_infos, &checks);
+    }
+
+    #[test]
+    pub fn test_fails_if_admin_is_not_signer() {
+        let program_id = Pubkey::new_from_array(ID);
+
+        let mollusk = get_mollusk(&program_id);
+
+        let ReturnVal {
+            mut account_meta,
+            account_infos,
+            ix_data,
+        } = get_init_global_configs(&program_id);
+
+        account_meta[0] = AccountMeta::new(account_meta[0].pubkey, false);
+
+        let ix = Instruction::new_with_bytes(program_id, &ix_data, account_meta);
+
+        mollusk.process_and_validate_instruction(
+            &ix,
+            &account_infos,
+            &[Check::err(
+                solana_sdk::program_error::ProgramError::MissingRequiredSignature,
+            )],
+        );
+    }
+
+    #[test]
+    pub fn test_fails_if_global_not_empty() {
+        let program_id = Pubkey::new_from_array(ID);
+
+        let mollusk = get_mollusk(&program_id);
+
+        let ReturnVal {
+            account_meta,
+            mut account_infos,
+            ix_data,
+        } = get_init_global_configs(&program_id);
+
+        let psudo_global_account = Account::new(0, 100, &account_infos[2].0);
+
+        account_infos[1] = (account_infos[1].0, psudo_global_account);
+
+        let ix = Instruction::new_with_bytes(program_id, &ix_data, account_meta);
+
+        mollusk.process_and_validate_instruction(
+            &ix,
+            &account_infos,
+            &[Check::err(
+                solana_sdk::program_error::ProgramError::AccountAlreadyInitialized,
+            )],
+        );
+    }
+
+    #[test]
+    pub fn test_fails_wrong_global_config() {
+        let program_id = Pubkey::new_from_array(ID);
+
+        let mollusk = get_mollusk(&program_id);
+
+        let ReturnVal {
+            account_meta,
+            mut account_infos,
+            ix_data,
+        } = get_init_global_configs(&program_id);
+
+        account_infos[1] = (Pubkey::new_unique(), account_infos[1].1.clone());
+
+        let ix = Instruction::new_with_bytes(program_id, &ix_data, account_meta);
+
+        mollusk.process_and_validate_instruction(
+            &ix,
+            &account_infos,
+            &[Check::err(
+                solana_sdk::program_error::ProgramError::IncorrectProgramId,
+            )],
+        );
     }
 }
