@@ -123,12 +123,14 @@ pub mod init_global_tests {
         let mollusk = get_mollusk(&program_id);
 
         let ReturnVal {
-            account_meta,
+            mut account_meta,
             mut account_infos,
             ix_data,
         } = get_init_global_configs(&program_id);
 
-        account_infos[1] = (Pubkey::new_unique(), account_infos[1].1.clone());
+        let psudo_global = Pubkey::new_unique();
+        account_infos[1] = (psudo_global, account_infos[1].1.clone());
+        account_meta[1] = AccountMeta::new(psudo_global, true);
 
         let ix = Instruction::new_with_bytes(program_id, &ix_data, account_meta);
 
@@ -137,6 +139,34 @@ pub mod init_global_tests {
             &account_infos,
             &[Check::err(
                 solana_sdk::program_error::ProgramError::IncorrectProgramId,
+            )],
+        );
+    }
+
+    #[test]
+    pub fn test_fails_wrong_account_len() {
+        let program_id = Pubkey::new_from_array(ID);
+
+        let mollusk = get_mollusk(&program_id);
+
+        let ReturnVal {
+            mut account_meta,
+            mut account_infos,
+            ix_data,
+        } = get_init_global_configs(&program_id);
+
+        let new_pubkey = Pubkey::new_unique();
+        let new_pubkey_account = Account::new(0, 0, &Pubkey::new_unique());
+        account_meta.push(AccountMeta::new(new_pubkey, false));
+        account_infos.push((new_pubkey, new_pubkey_account));
+
+        let ix = Instruction::new_with_bytes(program_id, &ix_data, account_meta);
+
+        mollusk.process_and_validate_instruction(
+            &ix,
+            &account_infos,
+            &[Check::err(
+                solana_sdk::program_error::ProgramError::NotEnoughAccountKeys,
             )],
         );
     }
