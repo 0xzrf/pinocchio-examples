@@ -1,4 +1,4 @@
-use crate::{constants::*, require, AmmError};
+use crate::require;
 use bytemuck::{Pod, Zeroable};
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
 
@@ -21,15 +21,15 @@ pub struct GlobalConfig {
 }
 
 impl GlobalConfig {
-    const GLOBAL_PEFIX: &[u8; 13] = b"global_config";
-    const SIZE: usize = U8_LEN * 3 + PUBKEY_LEN * 2 + U64_LEN * 4;
+    pub const GLOBAL_PEFIX: &[u8; 13] = b"global_config";
+    pub const SIZE: usize = core::mem::size_of::<GlobalConfig>();
 
     pub fn update_global(
-        &self,
         params: GlobalSettingsInput,
-        escrow_program: &AccountInfo,
+        global_account: &AccountInfo,
+        bump: u8,
     ) -> Result<(), ProgramError> {
-        let mut escrow_data = GlobalConfig::load(escrow_program)?;
+        let mut escrow_data = GlobalConfig::load(global_account)?;
         let GlobalSettingsInput {
             mint_decimals,
             fee_receiver,
@@ -48,14 +48,16 @@ impl GlobalConfig {
         escrow_data.initial_virtual_sol_reserves = initial_virtual_sol_reserves;
         escrow_data.initial_virtual_token_reserves = initial_virtual_token_reserves;
         escrow_data.token_total_supply = token_total_supply;
+        escrow_data.bump = bump;
+        escrow_data.inittialized = 1;
 
         Ok(())
     }
 
-    pub fn load(escrow_program: &AccountInfo) -> Result<Self, ProgramError> {
-        let data = unsafe { escrow_program.borrow_mut_data_unchecked() };
+    pub fn load(global_account: &AccountInfo) -> Result<Self, ProgramError> {
+        let data = unsafe { global_account.borrow_mut_data_unchecked() };
 
-        let escrow_data = bytemuck::try_from_bytes::<GlobalConfig>(&data)
+        let escrow_data = bytemuck::try_from_bytes::<GlobalConfig>(data)
             .map_err(|_| ProgramError::InvalidAccountData)?;
 
         Ok(*escrow_data)

@@ -1,16 +1,53 @@
-use pinocchio::{
-    account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
+use crate::{
+    require,
+    states::global_config::{GlobalConfig, GlobalSettingsInput},
+};
+use {
+    pinocchio::{
+        account_info::AccountInfo,
+        program_error::ProgramError,
+        pubkey::{find_program_address, pubkey_eq, Pubkey},
+        sysvars::{rent::Rent, Sysvar},
+        ProgramResult,
+    },
+    pinocchio_system::instructions::CreateAccount,
 };
 
 pub fn init_global(program_id: &Pubkey, accounts: &[AccountInfo], ix_data: &[u8]) -> ProgramResult {
-    Ok(())
-}
+    if let [admin, global_config, _] = accounts {
+        require(admin.is_signer(), ProgramError::MissingRequiredSignature)?;
 
-pub fn validate(program_id: &Pubkey, accounts: &[AccountInfo], ix_data: &[u8]) -> ProgramResult {
-    if let [admin] = accounts {
+        require(
+            global_config.data_is_empty(),
+            ProgramError::AccountAlreadyInitialized,
+        )?;
+
+        let seeds: &[&[u8]] = &[GlobalConfig::GLOBAL_PEFIX];
+
+        let (global_config_pda, bump) = find_program_address(seeds, program_id);
+
+        require(
+            pubkey_eq(&global_config_pda, global_config.key()),
+            ProgramError::IncorrectProgramId,
+        )?;
+
+        CreateAccount {
+            from: admin,
+            lamports: (Rent::get()?).minimum_balance(GlobalConfig::SIZE),
+            space: GlobalConfig::SIZE as u64,
+            owner: program_id,
+            to: global_config,
+        }
+        .invoke()?;
+
+        let params = bytemuck::try_from_bytes::<GlobalSettingsInput>(ix_data)
+            .map_err(|_| ProgramError::InvalidInstructionData)?;
+
+        GlobalConfig::validate_settings(params)?;
+
+        GlobalConfig::update_global(*params, global_config, bump)?;
     } else {
         return Err(ProgramError::NotEnoughAccountKeys);
     }
-
     Ok(())
 }
