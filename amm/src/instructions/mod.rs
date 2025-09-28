@@ -1,4 +1,5 @@
 use pinocchio::program_error::ProgramError;
+pub mod init_bonding_curve;
 pub mod init_global_config;
 
 #[repr(u8)]
