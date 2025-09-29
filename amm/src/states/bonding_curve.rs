@@ -29,18 +29,6 @@ pub struct BondingCurve {
     pub starting_slot: u64,
 }
 
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
-pub struct CreateCurveArgs {
-    pub name: [u8; 15],
-    pub uri: [u8; 32],
-    pub symbol: [u8; 5],
-}
-
-impl CreateCurveArgs {
-    pub const LEN: usize = core::mem::size_of::<Self>();
-}
-
 impl BondingCurve {
     pub const CURVE_SIZE: usize = core::mem::size_of::<Self>();
     pub const SEED_PREFIX: &[u8] = b"bonding_curve";
@@ -70,7 +58,6 @@ impl BondingCurve {
     /// # Example
     ///
     /// ```
-    /// let curve_data = BondingCurve::load(&curve_account)?;
     /// ```
     pub fn load(curve_account: &AccountInfo) -> Result<&mut Self, ProgramError> {
         let data = unsafe { curve_account.borrow_mut_data_unchecked() };

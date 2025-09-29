@@ -4,22 +4,39 @@ use solana_sdk::{
     account::{Account, WritableAccount},
     pubkey::Pubkey,
 };
+use spl_associated_token_account::solana_program::pubkey::Pubkey as aPubkey;
 use spl_token::{
     solana_program::{program_option::COption, program_pack::Pack, pubkey::Pubkey as sPubkey},
     state::{Account as ATA, Mint},
-    ID as token_program,
 };
+use spl_token_2022::ID as token_program;
 
 pub fn get_mollusk(program_id: &Pubkey) -> Mollusk {
     let mut mollusk = Mollusk::new(program_id, "target/deploy/amm");
 
     mollusk.add_program(
         &Pubkey::new_from_array(*token_program.as_array()),
-        "tests/spl_token",
+        "tests/elf_files/token_2022",
+        &mollusk_svm::program::loader_keys::LOADER_V3,
+    );
+    mollusk.add_program(
+        &Pubkey::from_str_const("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+        "tests/elf_files/associated_token_program",
         &mollusk_svm::program::loader_keys::LOADER_V3,
     );
 
     mollusk
+}
+
+pub fn find_deterministic_pubkey(id: &str) -> Pubkey {
+    assert!(id.len() <= 32, "id too long, must be <= 32");
+
+    let mut seed_array = [b'0'; 32];
+    let id_bytes = id.as_bytes();
+
+    seed_array[..id_bytes.len()].copy_from_slice(id_bytes);
+
+    Pubkey::new_from_array(seed_array)
 }
 
 pub fn get_program_configs() -> SystemConfig {
@@ -98,15 +115,13 @@ pub fn get_ata_accounts(
     (ata, ata_account)
 }
 
-// pub fn get_ix_data(ix_data: EscrowInstructions) -> Vec<u8> {
-//     let mut writer = Vec::new();
+pub fn to_associated_pubkey(pubkey: &Pubkey) -> aPubkey {
+    aPubkey::new_from_array(*pubkey.as_array())
+}
 
-//     ix_data
-//         .serialize(&mut writer)
-//         .expect("Unable to serialize the ix_data");
-
-//     writer
-// }
+pub fn to_spl_pubkey(pubkey: &Pubkey) -> sPubkey {
+    sPubkey::new_from_array(*pubkey.as_array())
+}
 
 pub fn get_mint_config(supply: u64) -> Mint {
     Mint {

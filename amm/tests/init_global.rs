@@ -34,7 +34,6 @@ pub mod init_global_tests {
             mint_decimals: 6,
             _padding: [0; 5],
             inittialized: 1,
-            bump,
             admin: Pubkey::new_from_array([0x2; 32]).to_bytes(),
             fee_receiver: Pubkey::new_from_array([0x1; 32]).to_bytes(),
 

@@ -1,9 +1,7 @@
 use crate::{
+    errors::AmmError,
     require,
-    states::{
-        bonding_curve::{BondingCurve, CreateCurveArgs},
-        global_config::GlobalConfig,
-    },
+    states::{bonding_curve::BondingCurve, global_config::GlobalConfig},
 };
 use {
     pinocchio::{
@@ -24,14 +22,10 @@ use {
     },
 };
 
-pub fn process_init_bonding_curve(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    ix_data: &[u8],
-) -> ProgramResult {
+pub fn process_init_bonding_curve(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     validate(program_id, accounts)?;
 
-    if let [creator, config_pda, curve_pda, mint, curve_mint_ata, curve_sol_escrow, system_program, token2022_program] =
+    if let [creator, config_pda, curve_pda, mint, curve_mint_ata, _curve_sol_escrow, system_program, token2022_program] =
         accounts
     {
         let seeds: &[&[u8]] = &[GlobalConfig::GLOBAL_PEFIX];
@@ -81,20 +75,7 @@ pub fn process_init_bonding_curve(
             mint.key(),
         )?;
 
-        require(
-            ix_data.len() == CreateCurveArgs::LEN,
-            ProgramError::InvalidInstructionData,
-        )?;
-
-        let mut aligned_ix = [0u8; CreateCurveArgs::LEN];
-
-        aligned_ix.copy_from_slice(ix_data);
-
-        let args = bytemuck::try_from_bytes::<CreateCurveArgs>(ix_data)
-            .map_err(|_| ProgramError::InvalidInstructionData)?;
-
         init_mint(
-            args,
             creator,
             mint,
             token2022_program,
@@ -148,8 +129,8 @@ pub fn process_init_bonding_curve(
 }
 
 pub fn validate(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-    if let [creator, config_pda, curve_pda, mint, curve_mint_ata, curve_sol_escrow, _, _] = accounts
-    {
+    if let [creator, _, curve_pda, mint, curve_mint_ata, curve_sol_escrow, _, _] = accounts {
+        require(false, AmmError::BorrowInvalid.into())?;
         require(creator.is_signer(), ProgramError::MissingRequiredSignature)?;
         require(mint.is_writable(), ProgramError::MissingRequiredSignature)?;
         require(
@@ -182,7 +163,6 @@ pub fn validate(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult 
 }
 
 pub fn init_mint(
-    args: &CreateCurveArgs,
     creator: &AccountInfo,
     mint: &AccountInfo,
     token2022_program: &AccountInfo,

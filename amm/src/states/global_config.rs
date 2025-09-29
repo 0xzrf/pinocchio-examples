@@ -6,9 +6,8 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::
 #[derive(Clone, Copy, Pod, Zeroable, Debug)]
 pub struct GlobalConfig {
     pub inittialized: u8,
-    pub bump: u8,
     pub mint_decimals: u8,
-    pub _padding: [u8; 5],
+    pub _padding: [u8; 6],
 
     pub admin: Pubkey,
     pub fee_receiver: Pubkey,
@@ -27,7 +26,6 @@ impl GlobalConfig {
     pub fn update_global(
         params: GlobalSettingsInput,
         global_account: &AccountInfo,
-        bump: u8,
     ) -> Result<(), ProgramError> {
         let global_data = GlobalConfig::load(global_account)?;
         let GlobalSettingsInput {
@@ -48,9 +46,8 @@ impl GlobalConfig {
         global_data.initial_virtual_sol_reserves = initial_virtual_sol_reserves;
         global_data.initial_virtual_token_reserves = initial_virtual_token_reserves;
         global_data.token_total_supply = token_total_supply;
-        global_data.bump = bump;
         global_data.inittialized = 1;
-        global_data._padding = [0u8; 5];
+        global_data._padding = [0u8; 6];
 
         Ok(())
     }

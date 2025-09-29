@@ -26,7 +26,7 @@ pub fn init_global(program_id: &Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
 
         let seeds: &[&[u8]] = &[GlobalConfig::GLOBAL_PEFIX];
 
-        let (global_config_pda, bump) = find_program_address(seeds, program_id);
+        let (global_config_pda, _) = find_program_address(seeds, program_id);
 
         require(
             pubkey_eq(&global_config_pda, global_config.key()),
@@ -57,7 +57,7 @@ pub fn init_global(program_id: &Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
 
         GlobalConfig::validate_settings(params)?;
 
-        GlobalConfig::update_global(*params, global_config, bump)?;
+        GlobalConfig::update_global(*params, global_config)?;
     } else {
         return Err(ProgramError::NotEnoughAccountKeys);
     }

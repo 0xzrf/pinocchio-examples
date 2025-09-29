@@ -1,5 +1,5 @@
 #![no_std]
-use pinocchio::{default_allocator, nostd_panic_handler, program_entrypoint};
+use pinocchio::{no_allocator, nostd_panic_handler, program_entrypoint};
 use pinocchio_pubkey::declare_id;
 use processor::process_instruction;
 
@@ -13,7 +13,7 @@ pub mod processor;
 pub mod states;
 
 program_entrypoint!(process_instruction);
-default_allocator!();
 nostd_panic_handler!();
+no_allocator!();
 
 declare_id!("DYiA6XRsVEr3Zrdq8G9nBrYTsw65CW8NRMR1KEsEFkou");
