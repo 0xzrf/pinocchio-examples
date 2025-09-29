@@ -26,13 +26,10 @@ pub mod init_global_tests {
             account_infos,
             ix_data,
         } = get_init_global_configs(&program_id);
-        let seeds: &[&[u8]] = &[GlobalConfig::GLOBAL_PEFIX];
-
-        let (_, bump) = Pubkey::find_program_address(seeds, &program_id);
 
         let ix_args = GlobalConfig {
             mint_decimals: 6,
-            _padding: [0; 5],
+            _padding: [0; 6],
             inittialized: 1,
             admin: Pubkey::new_from_array([0x2; 32]).to_bytes(),
             fee_receiver: Pubkey::new_from_array([0x1; 32]).to_bytes(),

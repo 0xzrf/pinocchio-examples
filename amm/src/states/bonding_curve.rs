@@ -66,7 +66,7 @@ impl BondingCurve {
             .map_err(|_| ProgramError::InvalidAccountData)
     }
 
-    pub fn get_signer_seeds(mint: &Pubkey) -> [Seed; 2] {
+    pub fn get_signer_seeds<'a>(mint: &'a Pubkey) -> [Seed<'a>; 2] {
         seeds!(Self::SEED_PREFIX, mint.as_ref())
     }
 

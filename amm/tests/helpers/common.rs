@@ -4,7 +4,9 @@ use solana_sdk::{
     account::{Account, WritableAccount},
     pubkey::Pubkey,
 };
-use spl_associated_token_account::solana_program::pubkey::Pubkey as aPubkey;
+use spl_associated_token_account::{
+    solana_program::pubkey::Pubkey as aPubkey, ID as associated_program_id,
+};
 use spl_token::{
     solana_program::{program_option::COption, program_pack::Pack, pubkey::Pubkey as sPubkey},
     state::{Account as ATA, Mint},
@@ -48,9 +50,17 @@ pub fn get_program_configs() -> SystemConfig {
         )),
     );
 
+    let associated_program_config = (
+        Pubkey::new_from_array(*associated_program_id.as_array()),
+        mollusk_svm::program::create_program_account_loader_v3(&Pubkey::new_from_array(
+            *associated_program_id.as_array(),
+        )),
+    );
+
     SystemConfig {
         system_config,
         token_config,
+        associated_program_config,
     }
 }
 

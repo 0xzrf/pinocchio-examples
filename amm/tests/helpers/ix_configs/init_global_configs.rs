@@ -9,6 +9,7 @@ pub fn get_init_global_configs(program_id: &Pubkey) -> ReturnVal {
     let SystemConfig {
         system_config: (system_address, system_account),
         token_config: _,
+        associated_program_config: _,
     } = get_program_configs();
 
     let admin_account = Account::new(10 * LAMPORTS_PER_SOL, 0, &system_address);

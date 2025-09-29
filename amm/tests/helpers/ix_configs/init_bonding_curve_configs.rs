@@ -14,6 +14,7 @@ pub fn get_init_bonding_curve_configs(mollusk: &Mollusk, program_id: &Pubkey) ->
     let SystemConfig {
         system_config: (system_program, system_program_account),
         token_config: (token_program, token_program_account),
+        associated_program_config: (associated_token_program, associated_program_account),
     } = get_program_configs();
 
     let creator = find_deterministic_pubkey("creator");
@@ -22,7 +23,7 @@ pub fn get_init_bonding_curve_configs(mollusk: &Mollusk, program_id: &Pubkey) ->
 
     let global_seeds: &[&[u8]] = &[GlobalConfig::GLOBAL_PEFIX];
 
-    let (global_config, bump) = Pubkey::find_program_address(global_seeds, &program_id);
+    let (global_config, _) = Pubkey::find_program_address(global_seeds, &program_id);
 
     let mut global_account = Account::new(
         mollusk.sysvars.rent.minimum_balance(GlobalConfig::SIZE),
@@ -82,6 +83,7 @@ pub fn get_init_bonding_curve_configs(mollusk: &Mollusk, program_id: &Pubkey) ->
             (sol_escrow_pda, sol_escrow_account),
             (system_program, system_program_account),
             (token_program, token_program_account),
+            (associated_token_program, associated_program_account),
         ],
         account_meta: vec![
             AccountMeta::new(creator, true),
@@ -92,6 +94,7 @@ pub fn get_init_bonding_curve_configs(mollusk: &Mollusk, program_id: &Pubkey) ->
             AccountMeta::new(sol_escrow_pda, false),
             AccountMeta::new(system_program, false),
             AccountMeta::new(token_program, false),
+            AccountMeta::new(associated_token_program, false),
         ],
         ix_data,
     }

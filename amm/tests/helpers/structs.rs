@@ -1,4 +1,3 @@
-use bytemuck::{Pod, Zeroable};
 use solana_sdk::{account::Account, message::AccountMeta, pubkey::Pubkey};
 
 pub struct ReturnVal {
@@ -10,4 +9,5 @@ pub struct ReturnVal {
 pub struct SystemConfig {
     pub system_config: (Pubkey, Account),
     pub token_config: (Pubkey, Account),
+    pub associated_program_config: (Pubkey, Account),
 }

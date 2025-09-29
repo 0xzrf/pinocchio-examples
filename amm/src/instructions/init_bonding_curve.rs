@@ -7,6 +7,7 @@ use {
     pinocchio::{
         account_info::AccountInfo,
         instruction::Signer,
+        log::sol_log as msg,
         program_error::ProgramError,
         pubkey::{find_program_address, pubkey_eq, Pubkey},
         sysvars::{rent::Rent, Sysvar},
@@ -23,9 +24,11 @@ use {
 };
 
 pub fn process_init_bonding_curve(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+    msg("AMM Instruction: Init Bonding Curve");
     validate(program_id, accounts)?;
+    msg("Validation completed");
 
-    if let [creator, config_pda, curve_pda, mint, curve_mint_ata, _curve_sol_escrow, system_program, token2022_program] =
+    if let [creator, config_pda, curve_pda, mint, curve_mint_ata, _curve_sol_escrow, system_program, token2022_program, _associated_token_program] =
         accounts
     {
         let seeds: &[&[u8]] = &[GlobalConfig::GLOBAL_PEFIX];
@@ -129,8 +132,7 @@ pub fn process_init_bonding_curve(program_id: &Pubkey, accounts: &[AccountInfo])
 }
 
 pub fn validate(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-    if let [creator, _, curve_pda, mint, curve_mint_ata, curve_sol_escrow, _, _] = accounts {
-        require(false, AmmError::BorrowInvalid.into())?;
+    if let [creator, _, curve_pda, mint, curve_mint_ata, curve_sol_escrow, _, _, _] = accounts {
         require(creator.is_signer(), ProgramError::MissingRequiredSignature)?;
         require(mint.is_writable(), ProgramError::MissingRequiredSignature)?;
         require(
