@@ -11,7 +11,7 @@ use pinocchio::{
 };
 
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug)]
 pub struct BondingCurve {
     pub complete: u8,
     pub bump: u8,

@@ -1,5 +1,4 @@
 use crate::{
-    errors::AmmError,
     require,
     states::{bonding_curve::BondingCurve, global_config::GlobalConfig},
 };
@@ -85,30 +84,6 @@ pub fn process_init_bonding_curve(program_id: &Pubkey, accounts: &[AccountInfo])
             curve_pda,
             config_data.mint_decimals,
         )?;
-
-        CreateAta {
-            funding_account: creator,
-            account: curve_mint_ata,
-            wallet: curve_pda,
-            mint,
-            system_program,
-            token_program: token2022_program,
-        }
-        .invoke()?;
-
-        let seeds = BondingCurve::get_signer_seeds(mint.key());
-
-        let signer_seeds = Signer::from(&seeds);
-
-        MintToChecked {
-            mint,
-            account: curve_mint_ata,
-            amount: config_data.token_total_supply,
-            decimals: config_data.mint_decimals,
-            mint_authority: curve_pda,
-            token_program: token2022_program.key(),
-        }
-        .invoke_signed(&[signer_seeds])?;
 
         let accounts: &[AccountInfo] = &[
             *creator,
@@ -225,6 +200,7 @@ pub fn mint_and_revoke_authorities(
         .invoke_signed(&[signer_seeds.clone()])?;
 
         // Setting mint authroity to none to avoid rug-pulls
+
         SetAuthority {
             account: mint,
             authority: curve_pda,
