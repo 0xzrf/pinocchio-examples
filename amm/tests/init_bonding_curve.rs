@@ -5,15 +5,24 @@ pub mod init_curve_tests {
     use super::*;
     use amm::{states::bonding_curve::BondingCurve, ID};
     use helpers::{
-        get_mollusk, ix_configs::init_bonding_curve_configs::get_init_bonding_curve_configs,
+        get_ata_accounts, get_ata_config, get_mint_accounts, get_mollusk,
+        ix_configs::init_bonding_curve_configs::get_init_bonding_curve_configs, to_spl_pubkey,
         ReturnVal,
     };
+
     use mollusk_svm::result::Check;
     use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
+    use spl_associated_token_account::solana_program::program_pack::Pack;
+    use spl_token::{
+        solana_program::program_option::COption,
+        state::{Account as ATA, Mint},
+    };
+    use spl_token_2022::ID as token_2022;
 
     #[test]
     pub fn test_init_curve_runs_sucessfully() {
         let program_id = Pubkey::new_from_array(ID);
+        let token_program = Pubkey::new_from_array(*token_2022.as_array());
         let mollusk = get_mollusk(&program_id);
         let ReturnVal {
             account_infos,
@@ -25,6 +34,8 @@ pub mod init_curve_tests {
 
         let bonding_curve_account = account_infos[2].0;
         let mint_account = account_infos[3].0;
+        let curve_mint_ata = account_infos[4].0;
+
         let curve_seeds: &[&[u8]] = &[BondingCurve::SEED_PREFIX, mint_account.as_ref()];
         let (_, curve_bump) = Pubkey::find_program_address(curve_seeds, &program_id);
 
@@ -45,6 +56,24 @@ pub mod init_curve_tests {
 
         let expected_data_bytes = bytemuck::bytes_of(&expected_curve_data);
 
+        let expected_mint_config = Mint {
+            decimals: 6,
+            freeze_authority: COption::Some(to_spl_pubkey(&bonding_curve_account)),
+            is_initialized: true,
+            mint_authority: COption::None,
+            supply: 1_000_000_000_000_000,
+        };
+
+        let (_, expected_mint_account) = get_mint_accounts(None, &mollusk, expected_mint_config);
+
+        let ata_configs = get_ata_config(
+            1_000_000_000_000_000,
+            to_spl_pubkey(&mint_account),
+            to_spl_pubkey(&bonding_curve_account),
+        );
+
+        let (_, expected_curve_ata_account) = get_ata_accounts(None, &mollusk, ata_configs);
+
         let checks = [
             Check::success(),
             Check::all_rent_exempt(),
@@ -58,6 +87,17 @@ pub mod init_curve_tests {
                 )
                 .owner(&program_id)
                 .data(expected_data_bytes)
+                .build(),
+            Check::account(&mint_account)
+                .space(Mint::LEN)
+                .lamports(mollusk.sysvars.rent.minimum_balance(Mint::LEN))
+                .owner(&token_program)
+                .data(&expected_mint_account.data)
+                .build(),
+            Check::account(&curve_mint_ata)
+                // .space(ATA::LEN)
+                // .lamports(mollusk.sysvars.rent.minimum_balance(ATA::LEN))
+                .data(&expected_curve_ata_account.data)
                 .build(),
         ];
 
