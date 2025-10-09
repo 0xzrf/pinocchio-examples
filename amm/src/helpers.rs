@@ -29,3 +29,12 @@ where
 
     bytemuck::try_from_bytes_mut::<T>(data).map_err(|_| ProgramError::InvalidAccountData)
 }
+
+pub fn load_read_only<T>(account: &AccountInfo) -> Result<&T, ProgramError>
+where
+    T: Pod + Zeroable,
+{
+    let data = unsafe { account.borrow_data_unchecked() };
+
+    bytemuck::try_from_bytes::<T>(data).map_err(|_| ProgramError::InvalidAccountData)
+}
