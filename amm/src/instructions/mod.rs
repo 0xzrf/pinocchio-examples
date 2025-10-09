@@ -1,7 +1,7 @@
 use pinocchio::program_error::ProgramError;
 pub mod init_bonding_curve;
 pub mod init_global_config;
-
+pub mod swap;
 #[repr(u8)]
 pub enum AmmInstructions {
     CreateGlobal,

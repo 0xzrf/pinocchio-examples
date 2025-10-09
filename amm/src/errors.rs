@@ -11,6 +11,10 @@ pub enum AmmError {
     InvalidMint,
     #[error("Invalid token amount")]
     InvalidBalance,
+    #[error("Curve Completed")]
+    CurveComplete,
+    #[error("Curve Not started yet")]
+    CurveNotStarted,
 }
 
 impl From<AmmError> for ProgramError {
@@ -25,6 +29,8 @@ impl ToStr for AmmError {
             AmmError::BorrowInvalid => "Load Error: Couldn't mut borrow account data",
             AmmError::InvalidMint => "Validation Error: Invalid Mint",
             AmmError::InvalidBalance => "Validation Error: Invalid Token amount",
+            AmmError::CurveComplete => "Validation Error: Curve Already Complete",
+            AmmError::CurveNotStarted => "Validation Error: Curve Not started yet",
         }
     }
 }
