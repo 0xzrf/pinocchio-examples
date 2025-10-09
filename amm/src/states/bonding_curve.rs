@@ -186,7 +186,90 @@ impl BondingCurve {
     }
 
     pub fn apply_buy(&mut self, mut sol_amount: u64, decimals: u8) -> Option<BuyResult> {
-        todo!()
+        let mut token_amount = self.get_tokens_for_buy_sol(sol_amount, decimals)?;
+
+        log_value("ApplyBuy: sol_amount:", sol_amount.into());
+        log_value("ApplyBuy: token_amount", token_amount.into());
+
+        if token_amount >= self.real_token_reserves {
+            msg!("Bonding curve completed");
+
+            log_value("real_token_reserves::", self.real_token_reserves.into());
+
+            // Last Buy
+            token_amount = self.real_token_reserves;
+
+            // Temporarily store the current state
+            let current_virtual_token_reserves = self.virtual_token_reserves;
+            let current_virtual_sol_reserves = self.virtual_sol_reserves;
+
+            // Update self with the new token amount
+            self.virtual_token_reserves = (current_virtual_token_reserves as u128)
+                .checked_sub(token_amount as u128)?
+                .try_into()
+                .ok()?;
+            self.virtual_sol_reserves = 115_005_359_056; // Total raise amount at end
+
+            let recomputed_sol_amount = self.get_sol_for_sell_tokens(token_amount, decimals)?;
+
+            log_value(
+                "ApplyBuy: recomputed_sol_amount:",
+                recomputed_sol_amount.into(),
+            );
+            sol_amount = recomputed_sol_amount;
+
+            // Restore the state with the recomputed sol_amount
+            self.virtual_token_reserves = current_virtual_token_reserves;
+            self.virtual_sol_reserves = current_virtual_sol_reserves;
+
+            // Set complete to true
+            self.complete = 1;
+        }
+
+        // Adjusting token reserve values
+        // New Virtual Token Reserves
+        let new_virtual_token_reserves =
+            (self.virtual_token_reserves as u128).checked_sub(token_amount as u128)?;
+
+        log_value(
+            "ApplyBuy: new_virtual_token_reserves:",
+            new_virtual_token_reserves,
+        );
+
+        // New Real Token Reserves
+        let new_real_token_reserves =
+            (self.real_token_reserves as u128).checked_sub(token_amount as u128)?;
+
+        log_value(
+            "ApplyBuy: new_real_token_reserves:",
+            new_real_token_reserves,
+        );
+
+        // Adjusting sol reserve values
+        // New Virtual Sol Reserves
+        let new_virtual_sol_reserves =
+            (self.virtual_sol_reserves as u128).checked_add(sol_amount as u128)?;
+
+        log_value(
+            "ApplyBuy: new_virtual_sol_reserves:",
+            new_virtual_sol_reserves,
+        );
+
+        // New Real Sol Reserves
+        let new_real_sol_reserves =
+            (self.real_sol_reserves as u128).checked_add(sol_amount as u128)?;
+
+        log_value("ApplyBuy: new_real_sol_reserves:", new_real_sol_reserves);
+
+        self.virtual_token_reserves = new_virtual_token_reserves.try_into().ok()?;
+        self.real_token_reserves = new_real_token_reserves.try_into().ok()?;
+        self.virtual_sol_reserves = new_virtual_sol_reserves.try_into().ok()?;
+        self.real_sol_reserves = new_real_sol_reserves.try_into().ok()?;
+
+        Some(BuyResult {
+            token_amount,
+            sol_amount,
+        })
     }
 
     pub fn get_sol_for_sell_tokens(&self, token_amount: u64, decimals: u8) -> Option<u64> {
@@ -215,7 +298,29 @@ impl BondingCurve {
     }
 
     pub fn get_tokens_for_buy_sol(&self, sol_amount: u64, decimals: u8) -> Option<u64> {
-        todo!()
+        let mint_decimals = 10u128.pow(decimals as u32);
+
+        // Convert to common decimal basis (using 9 decimals as base)
+        let current_sol: u128 = self.virtual_sol_reserves as u128;
+        // Scaling to SOL's decimal point
+        let current_tokens = (self.virtual_token_reserves as u128)
+            .checked_mul(SOLANA_DECIMALS as u128)?
+            .checked_div(mint_decimals)?;
+
+        // Calculate new reserves using constant product formula
+        let new_sol: u128 = current_sol.checked_add(sol_amount as u128)?;
+        let k_value_before = current_sol.checked_mul(current_tokens)?;
+        let new_tokens = k_value_before.checked_div(new_sol)?;
+
+        let tokens_out: u128 = current_tokens.checked_sub(new_tokens)?;
+
+        // Convert back to mint decimal places for tokens
+        let tokens_out = tokens_out
+            .checked_mul(mint_decimals)? // Convert to mint decimals
+            .checked_div(SOLANA_DECIMALS as u128)?; // From 9 decimals
+
+        log_value("GetTokensForBuySol: tokens_out:", tokens_out);
+        <u128 as TryInto<u64>>::try_into(tokens_out).ok()
     }
 
     pub fn invariant(&self) -> Result<(), ProgramError> {
