@@ -1,6 +1,10 @@
-use crate::require;
+use crate::{load, require};
 use bytemuck::{Pod, Zeroable};
-use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
+use pinocchio::{
+    account_info::AccountInfo,
+    program_error::ProgramError,
+    pubkey::{find_program_address, pubkey_eq, Pubkey},
+};
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Debug)]
@@ -27,7 +31,7 @@ impl GlobalConfig {
         params: GlobalSettingsInput,
         global_account: &AccountInfo,
     ) -> Result<(), ProgramError> {
-        let global_data = GlobalConfig::load(global_account)?;
+        let global_data = load::<GlobalConfig>(global_account)?;
         let GlobalSettingsInput {
             mint_decimals,
             fee_receiver,
@@ -52,12 +56,16 @@ impl GlobalConfig {
         Ok(())
     }
 
-    #[inline(always)]
-    pub fn load(global_account: &AccountInfo) -> Result<&mut Self, ProgramError> {
-        let data = unsafe { global_account.borrow_mut_data_unchecked() };
+    pub fn check_id(global_account: &AccountInfo) -> Result<(), ProgramError> {
+        let global_seeds: &[&[u8]] = &[GlobalConfig::GLOBAL_PEFIX];
 
-        bytemuck::try_from_bytes_mut::<GlobalConfig>(data)
-            .map_err(|_| ProgramError::InvalidAccountData)
+        let (expected_global_config, _) = find_program_address(global_seeds, &crate::ID);
+
+        require(
+            pubkey_eq(global_account.key(), &expected_global_config),
+            ProgramError::IncorrectProgramId,
+        )?;
+        Ok(())
     }
 
     pub fn validate_settings(params: &GlobalSettingsInput) -> Result<(), ProgramError> {

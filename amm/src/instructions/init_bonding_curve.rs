@@ -1,5 +1,5 @@
 use crate::{
-    require,
+    load, require,
     states::{bonding_curve::BondingCurve, global_config::GlobalConfig},
 };
 use {
@@ -44,7 +44,7 @@ pub fn process_init_bonding_curve(program_id: &Pubkey, accounts: &[AccountInfo])
             ProgramError::UninitializedAccount,
         )?;
 
-        let config_data = GlobalConfig::load(config_pda)?;
+        let config_data = load::<GlobalConfig>(config_pda)?;
 
         require(
             config_data.inittialized.eq(&1),

@@ -1,11 +1,11 @@
-use crate::{bps_mul, states::global_config::GlobalConfig};
+use crate::{bps_mul, load, require, states::global_config::GlobalConfig};
 use bytemuck::{Pod, Zeroable};
 use pinocchio::{
     account_info::AccountInfo,
     instruction::Seed,
     log::sol_log,
     program_error::ProgramError,
-    pubkey::Pubkey,
+    pubkey::{find_program_address, pubkey_eq, Pubkey},
     seeds,
     sysvars::{clock::Clock, Sysvar},
 };
@@ -35,35 +35,17 @@ impl BondingCurve {
     pub const SOL_ESCROW_SEED_PREFIX: &[u8] = b"sol_escrow";
     pub const MINT_SEED_PREFIX: &[u8] = b"curve_mint";
 
-    #[inline(always)]
-    /// Loads and returns a mutable reference to the [`BondingCurve`] struct stored in the given account.
-    ///
-    /// # Safety
-    ///
-    /// This function uses [`AccountInfo::borrow_mut_data_unchecked`] to obtain a mutable reference to the account's data buffer.
-    /// This is inherently unsafe because it bypasses Rust's usual borrow checking, and can cause undefined behavior if:
-    /// - The same account's data is mutably borrowed more than once in the same scope.
-    /// - The account's data is accessed elsewhere while this reference is alive.
-    ///
-    /// **To avoid undefined behavior, ensure that you do not call this function multiple times on the same account within a single scope.**
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ProgramError::InvalidAccountData`] if the account's data cannot be parsed as a [`BondingCurve`] struct.
-    ///
-    /// # Arguments
-    ///
-    /// * `curve_account` - The [`AccountInfo`] containing the serialized [`BondingCurve`] data.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// ```
-    pub fn load(curve_account: &AccountInfo) -> Result<&mut Self, ProgramError> {
-        let data = unsafe { curve_account.borrow_mut_data_unchecked() };
+    pub fn check_id(curve_account: &AccountInfo, mint: Pubkey) -> Result<(), ProgramError> {
+        let curve_seeds: &[&[u8]] = &[BondingCurve::SEED_PREFIX, mint.as_ref()];
 
-        bytemuck::try_from_bytes_mut::<BondingCurve>(data)
-            .map_err(|_| ProgramError::InvalidAccountData)
+        let (expected_curve_pda, _) = find_program_address(curve_seeds, &crate::ID);
+
+        require(
+            pubkey_eq(curve_account.key(), &expected_curve_pda),
+            ProgramError::IncorrectProgramId,
+        )?;
+
+        Ok(())
     }
 
     pub fn get_signer_seeds<'a>(mint: &'a Pubkey) -> [Seed<'a>; 2] {
@@ -77,7 +59,7 @@ impl BondingCurve {
         creator_key: &Pubkey,
         mint: &Pubkey,
     ) -> Result<(), ProgramError> {
-        let curve_data = BondingCurve::load(curve_account)?;
+        let curve_data = load::<BondingCurve>(curve_account)?;
 
         let slot = (Clock::get()?).slot;
 
