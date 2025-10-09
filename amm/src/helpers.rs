@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use pinocchio::{account_info::AccountInfo, program_error::ProgramError};
+use pinocchio::{account_info::AccountInfo, log::sol_log_64, msg, program_error::ProgramError};
 
 /// Errors out if the condition isn't true
 ///
@@ -37,4 +37,9 @@ where
     let data = unsafe { account.borrow_data_unchecked() };
 
     bytemuck::try_from_bytes::<T>(data).map_err(|_| ProgramError::InvalidAccountData)
+}
+
+pub fn log_value(context: &str, value: u128) {
+    msg!(context);
+    sol_log_64(value as u64, 0, 0, 0, 0);
 }

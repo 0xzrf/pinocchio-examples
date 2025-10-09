@@ -1,9 +1,14 @@
-use crate::{bps_mul, load, require, states::global_config::GlobalConfig};
+use crate::{
+    bps_mul, constants::SOLANA_DECIMALS, helpers::log_value, load, require,
+    states::global_config::GlobalConfig,
+};
 use bytemuck::{Pod, Zeroable};
 use pinocchio::{
     account_info::AccountInfo,
     instruction::Seed,
     log::sol_log,
+    log::sol_log_64,
+    msg,
     program_error::ProgramError,
     pubkey::{find_program_address, pubkey_eq, Pubkey},
     seeds,
@@ -27,6 +32,18 @@ pub struct BondingCurve {
     pub real_token_reserves: u64,
     pub token_total_supply: u64,
     pub starting_slot: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct BuyResult {
+    pub token_amount: u64,
+    pub sol_amount: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct SellResult {
+    pub token_amount: u64,
+    pub sol_amount: u64,
 }
 
 impl BondingCurve {
@@ -114,5 +131,94 @@ impl BondingCurve {
             sol_fee = bps_mul(100, amount, 10_000).unwrap();
         }
         Ok(sol_fee)
+    }
+
+    pub fn apply_sell(&mut self, token_amount: u64, decimals: u8) -> Option<SellResult> {
+        log_value("apply_sell: token_amount:", token_amount as u128);
+
+        let sol_amount = self.get_sol_for_sell_tokens(token_amount, decimals)?;
+
+        // Adjusting token reserve values
+        // New Virtual Token Reserves
+        let new_virtual_token_reserves =
+            (self.virtual_token_reserves as u128).checked_add(token_amount.into())?;
+
+        log_value(
+            "apply_sell: new_virtual_token_reserves:",
+            new_virtual_token_reserves,
+        );
+        // New Real Token Reserves
+        let new_real_token_reserves =
+            (self.real_token_reserves as u128).checked_add(token_amount.into())?;
+
+        log_value(
+            "apply_sell: new_real_token_reserves",
+            new_real_token_reserves,
+        );
+
+        // Adjusting sol reserve values
+        // New Virtual Sol Reserves
+        let new_virtual_sol_reserves =
+            (self.virtual_sol_reserves as u128).checked_sub(sol_amount.into())?;
+
+        log_value(
+            "apply_sell: new_virtual_sol_reserves",
+            new_virtual_sol_reserves,
+        );
+
+        // New Real Sol Reserves
+        let new_real_sol_reserves = self.real_sol_reserves.checked_sub(sol_amount)?;
+
+        log_value(
+            "apply_sell: new_real_sol_reserves:",
+            new_real_sol_reserves.into(),
+        );
+
+        self.virtual_token_reserves = new_virtual_token_reserves.try_into().ok()?;
+        self.real_token_reserves = new_real_token_reserves.try_into().ok()?;
+        self.virtual_sol_reserves = new_virtual_sol_reserves.try_into().ok()?;
+        self.real_sol_reserves = new_real_sol_reserves;
+
+        Some(SellResult {
+            token_amount,
+            sol_amount,
+        })
+    }
+
+    pub fn apply_buy(&mut self, mut sol_amount: u64, decimals: u8) -> Option<BuyResult> {
+        todo!()
+    }
+
+    pub fn get_sol_for_sell_tokens(&self, token_amount: u64, decimals: u8) -> Option<u64> {
+        let mint_decimals = 10u128.pow(decimals as u32);
+
+        // Convert to common decimal basis (using 9 decimals as base)
+        let current_sol = self.virtual_sol_reserves as u128;
+        let current_tokens = (self.virtual_token_reserves as u128)
+            .checked_mul(SOLANA_DECIMALS as u128)? // Scale tokens up to 9 decimals
+            .checked_div(mint_decimals)?; // From 6 decimals
+
+        // Calculate new reserves using constant product formula
+        let new_tokens = current_tokens.checked_add(
+            (token_amount as u128)
+                .checked_mul(SOLANA_DECIMALS as u128)? // Scale input tokens to 9 decimals
+                .checked_div(mint_decimals)?, // From 6 decimals
+        )?;
+
+        let new_sol = (current_sol.checked_mul(current_tokens)?).checked_div(new_tokens)?;
+
+        let sol_out = current_sol.checked_sub(new_sol)?;
+
+        log_value("GetSolForSellTokens: sol_out:", sol_out);
+
+        <u128 as TryInto<u64>>::try_into(sol_out).ok()
+    }
+
+    pub fn get_tokens_for_buy_sol(&self, sol_amount: u64, decimals: u8) -> Option<u64> {
+        todo!()
+    }
+
+    pub fn invariant(&self) -> Result<(), ProgramError> {
+        Ok(())
     }
 }
