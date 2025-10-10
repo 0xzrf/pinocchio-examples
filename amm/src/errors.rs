@@ -21,6 +21,8 @@ pub enum AmmError {
     CouldNotSell,
     #[error("Slippage Exceeded")]
     SlippageExceeded,
+    #[error("Invariant Failed")]
+    InvariantFailed,
 }
 
 impl From<AmmError> for ProgramError {
@@ -40,6 +42,7 @@ impl ToStr for AmmError {
             AmmError::SlippageExceeded => "Swap Error: Slippage exceeded",
             AmmError::CouldNotBuy => "Swap Error: Couldn't buy tokens",
             AmmError::CouldNotSell => "Swap Error: Couldn't sell tokens",
+            AmmError::InvariantFailed => "Swap Error: Invariants failed",
         }
     }
 }

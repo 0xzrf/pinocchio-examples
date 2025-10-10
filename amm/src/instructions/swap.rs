@@ -34,7 +34,7 @@ pub struct SwapParams {
     pub min_out_amount: u64,
 }
 
-pub fn process_swap(program_id: Pubkey, accounts: &[AccountInfo], ix_data: &[u8]) -> ProgramResult {
+pub fn process_swap(accounts: &[AccountInfo], ix_data: &[u8]) -> ProgramResult {
     msg!("AMM INSTRUCTION: SWAP");
     let (mut curve_data, swap_params) = validate(accounts, ix_data)?;
 
@@ -63,7 +63,7 @@ pub fn process_swap(program_id: Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
 
         let mint_info =
             Mint::from_account_info(mint_b).map_err(|_| ProgramError::InvalidAccountData)?;
-        if swap_params.base_in == 1 {
+        if base_in == 1 {
             // Sell Tokens
             let buyer_mint_info = TokenAccount::from_account_info(buyer_mint_ata)
                 .map_err(|_| ProgramError::InvalidAccountData)?;
@@ -88,6 +88,24 @@ pub fn process_swap(program_id: Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
             fee_lamports = curve_account_data.calculate_fee(sol_amount)?;
 
             log_value("Fee in SOL:", fee_lamports.into());
+
+            let sell_accounts = &[
+                *buyer,
+                *buyer_mint_ata,
+                *curve_pda,
+                *curve_mint_ata,
+                *curve_sol_escrow,
+                *mint_b,
+                *fee_receiver,
+            ];
+            complete_sell(
+                sell_accounts,
+                sell_result,
+                min_out_amount,
+                fee_lamports,
+                mint_info.decimals(),
+                signer,
+            )?;
         } else {
             // Buy tokens
             let fee_lamports = curve_data.calculate_fee(swap_params.exact_in_amount)?;
@@ -110,12 +128,72 @@ pub fn process_swap(program_id: Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
             complete_buy(
                 buy_acconts,
                 buy_result,
-                swap_params.min_out_amount,
+                min_out_amount,
                 fee_lamports,
                 mint_info.decimals(),
                 signer,
             )?;
         }
+
+        let invariant_accounts = &[*curve_mint_ata, *curve_sol_escrow];
+        curve_data.invariant(invariant_accounts)?;
+
+        Ok(())
+    } else {
+        Err(ProgramError::NotEnoughAccountKeys)
+    }
+}
+
+pub fn complete_sell(
+    accounts: &[AccountInfo],
+    sell_result: SellResult,
+    min_out_amount: u64,
+    fee_lamports: u64,
+    decimals: u8,
+    seeds: Signer,
+) -> ProgramResult {
+    if let [buyer, buyer_mint_ata, curve_pda, curve_mint_ata, curve_sol_ata, mint, fee_receiver] =
+        accounts
+    {
+        require(
+            sell_result.sol_amount >= min_out_amount,
+            AmmError::SlippageExceeded.into(),
+        )?;
+
+        TransferChecked {
+            amount: sell_result.token_amount,
+            authority: buyer,
+            decimals,
+            from: buyer_mint_ata,
+            to: curve_mint_ata,
+            mint,
+            token_program: &TOKEN_PROGRMA_ID,
+        }
+        .invoke()?;
+
+        FreezeAccount {
+            account: curve_mint_ata,
+            freeze_authority: curve_pda,
+            mint,
+            token_program: &TOKEN_PROGRMA_ID,
+        }
+        .invoke_signed(&[seeds.clone()])?;
+
+        // Sending SOL from buyer to the curve_sol_escrow
+        SendSol {
+            from: curve_sol_ata,
+            lamports: sell_result.sol_amount,
+            to: buyer,
+        }
+        .invoke_signed(&[seeds])?;
+
+        // Send Fee to the fee_receiver
+        SendSol {
+            from: buyer,
+            lamports: fee_lamports,
+            to: fee_receiver,
+        }
+        .invoke()?;
 
         Ok(())
     } else {
@@ -215,8 +293,6 @@ pub fn validate(
             ProgramError::IncorrectProgramId,
         )?;
         let buyer_mint_info = TokenAccount::from_account_info(buyer_mint_ata)
-            .map_err(|_| ProgramError::InvalidAccountData)?;
-        let curve_sol_info = TokenAccount::from_account_info(curve_sol_escrow)
             .map_err(|_| ProgramError::InvalidAccountData)?;
         let curve_mint_info = TokenAccount::from_account_info(curve_mint_ata)
             .map_err(|_| ProgramError::InvalidAccountData)?;
