@@ -15,6 +15,10 @@ pub enum AmmError {
     CurveComplete,
     #[error("Curve Not started yet")]
     CurveNotStarted,
+    #[error("Couldn't buy")]
+    CouldNotBuy,
+    #[error("Couldn't sell")]
+    CouldNotSell,
 }
 
 impl From<AmmError> for ProgramError {
