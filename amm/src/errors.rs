@@ -19,6 +19,8 @@ pub enum AmmError {
     CouldNotBuy,
     #[error("Couldn't sell")]
     CouldNotSell,
+    #[error("Slippage Exceeded")]
+    SlippageExceeded,
 }
 
 impl From<AmmError> for ProgramError {
@@ -35,6 +37,9 @@ impl ToStr for AmmError {
             AmmError::InvalidBalance => "Validation Error: Invalid Token amount",
             AmmError::CurveComplete => "Validation Error: Curve Already Complete",
             AmmError::CurveNotStarted => "Validation Error: Curve Not started yet",
+            AmmError::SlippageExceeded => "Swap Error: Slippage exceeded",
+            AmmError::CouldNotBuy => "Swap Error: Couldn't buy tokens",
+            AmmError::CouldNotSell => "Swap Error: Couldn't sell tokens",
         }
     }
 }

@@ -1,6 +1,9 @@
 use crate::{
     load, load_read_only, log_value, require,
-    states::{bonding_curve::BondingCurve, global_config::GlobalConfig},
+    states::{
+        bonding_curve::{BondingCurve, BuyResult, SellResult},
+        global_config::GlobalConfig,
+    },
     AmmError,
 };
 use bytemuck::{Pod, Zeroable};
@@ -14,8 +17,9 @@ use {
         sysvars::{rent::Rent, Sysvar},
         ProgramResult,
     },
+    pinocchio_system::instructions::Transfer as SendSol,
     pinocchio_token_2022::{
-        instructions::ThawAccount,
+        instructions::{FreezeAccount, ThawAccount, TransferChecked},
         state::{AccountState, Mint, TokenAccount},
         ID as TOKEN_PROGRMA_ID,
     },
@@ -32,7 +36,7 @@ pub struct SwapParams {
 
 pub fn process_swap(program_id: Pubkey, accounts: &[AccountInfo], ix_data: &[u8]) -> ProgramResult {
     msg!("AMM INSTRUCTION: SWAP");
-    let (mut curve_data, swap_params) = validate(program_id, accounts, ix_data)?;
+    let (mut curve_data, swap_params) = validate(accounts, ix_data)?;
 
     let SwapParams {
         base_in,
@@ -41,7 +45,7 @@ pub fn process_swap(program_id: Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
         min_out_amount,
     } = swap_params;
 
-    if let [buyer, buyer_sol_ata, buyer_mint_ata, mint_a, mint_b, config, curve_pda, curve_sol_escrow, curve_mint_ata, fee_receiver, _system_program, _token_program] =
+    if let [buyer, buyer_mint_ata, _mint_a, mint_b, _config, curve_pda, curve_sol_escrow, curve_mint_ata, fee_receiver, _system_program, _token_program] =
         accounts
     {
         let signer_seeds = BondingCurve::get_signer_seeds(mint_b.key());
@@ -52,7 +56,7 @@ pub fn process_swap(program_id: Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
             mint: mint_b,
             token_program: &TOKEN_PROGRMA_ID,
         }
-        .invoke_signed(&[signer])?;
+        .invoke_signed(&[signer.clone()])?;
 
         let sol_amount: u64;
         let fee_lamports: u64;
@@ -92,6 +96,25 @@ pub fn process_swap(program_id: Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
             let buy_result = curve_data
                 .apply_buy(buy_amount_applied, mint_info.decimals())
                 .ok_or(AmmError::CouldNotBuy)?;
+
+            let buy_acconts = &[
+                *buyer,
+                *buyer_mint_ata,
+                *curve_pda,
+                *curve_mint_ata,
+                *curve_sol_escrow,
+                *mint_b,
+                *fee_receiver,
+            ];
+
+            complete_buy(
+                buy_acconts,
+                buy_result,
+                swap_params.min_out_amount,
+                fee_lamports,
+                mint_info.decimals(),
+                signer,
+            )?;
         }
 
         Ok(())
@@ -100,12 +123,68 @@ pub fn process_swap(program_id: Pubkey, accounts: &[AccountInfo], ix_data: &[u8]
     }
 }
 
+pub fn complete_buy(
+    accounts: &[AccountInfo],
+    buy_result: BuyResult,
+    min_out_amount: u64,
+    fee_lamports: u64,
+    decimals: u8,
+    seeds: Signer,
+) -> ProgramResult {
+    if let [buyer, buyer_mint_ata, curve_pda, curve_mint_ata, curve_sol_ata, mint, fee_receiver] =
+        accounts
+    {
+        require(
+            buy_result.token_amount >= min_out_amount,
+            AmmError::SlippageExceeded.into(),
+        )?;
+
+        TransferChecked {
+            amount: buy_result.token_amount,
+            authority: curve_pda,
+            decimals,
+            from: curve_mint_ata,
+            to: buyer_mint_ata,
+            mint,
+            token_program: &TOKEN_PROGRMA_ID,
+        }
+        .invoke_signed(&[seeds.clone()])?;
+
+        FreezeAccount {
+            account: curve_mint_ata,
+            freeze_authority: curve_pda,
+            mint,
+            token_program: &TOKEN_PROGRMA_ID,
+        }
+        .invoke_signed(&[seeds])?;
+
+        // Sending SOL from buyer to the curve_sol_escrow
+        SendSol {
+            from: buyer,
+            lamports: buy_result.sol_amount,
+            to: curve_sol_ata,
+        }
+        .invoke()?;
+
+        // Send Fee to the fee_receiver
+        SendSol {
+            from: buyer,
+            lamports: fee_lamports,
+            to: fee_receiver,
+        }
+        .invoke()?;
+
+        Ok(())
+    } else {
+        Err(ProgramError::NotEnoughAccountKeys)
+    }
+}
+
 pub fn validate(
-    program_id: Pubkey,
     accounts: &[AccountInfo],
     ix_data: &[u8],
 ) -> Result<(BondingCurve, SwapParams), ProgramError> {
-    if let [buyer, buyer_sol_ata, buyer_mint_ata, mint_a, mint_b, config, curve_pda, curve_sol_escrow, curve_mint_ata, fee_receiver, _, _] =
+    if let [buyer, buyer_mint_ata, _mint_a, mint_b, config, curve_pda, curve_sol_escrow, curve_mint_ata, fee_receiver, _, _] =
         accounts
     {
         require(buyer.is_signer(), ProgramError::MissingRequiredSignature)?;
@@ -135,8 +214,6 @@ pub fn validate(
             pubkey_eq(mint_b.key(), &curve_data.mint),
             ProgramError::IncorrectProgramId,
         )?;
-        let buyer_sol_info = TokenAccount::from_account_info(buyer_sol_ata)
-            .map_err(|_| ProgramError::InvalidAccountData)?;
         let buyer_mint_info = TokenAccount::from_account_info(buyer_mint_ata)
             .map_err(|_| ProgramError::InvalidAccountData)?;
         let curve_sol_info = TokenAccount::from_account_info(curve_sol_escrow)
@@ -152,7 +229,6 @@ pub fn validate(
 
         require(
             pubkey_eq(buyer_mint_info.owner(), buyer.key())
-                && pubkey_eq(buyer_sol_info.owner(), buyer.key())
                 && pubkey_eq(curve_mint_info.owner(), curve_pda.key())
                 && pubkey_eq(curve_sol_escrow.owner(), curve_pda.key()),
             ProgramError::IncorrectAuthority,
